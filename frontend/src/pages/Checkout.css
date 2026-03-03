@@ -1,0 +1,115 @@
+.checkout {
+  padding: var(--spacing-xxl) 0;
+  min-height: calc(100vh - 80px);
+}
+
+.checkout h1 {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-xxl);
+  text-align: center;
+  color: var(--color-primary);
+}
+
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--spacing-xxl);
+}
+
+.form-section {
+  background-color: var(--color-white);
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-section h2 {
+  font-size: 1.5rem;
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: var(--spacing-sm);
+}
+
+.order-summary {
+  background-color: var(--color-white);
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 100px;
+  height: fit-content;
+}
+
+.order-summary h2 {
+  font-size: 1.5rem;
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-primary);
+}
+
+.summary-items {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--spacing-md);
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.summary-item-name {
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.summary-item-meta {
+  font-size: 0.9rem;
+  color: var(--color-text-light);
+}
+
+.summary-item-price {
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--spacing-lg);
+  margin-top: var(--spacing-md);
+  border-top: 2px solid var(--color-primary);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.total-amount {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.empty-cart-message {
+  text-align: center;
+  padding: var(--spacing-xxl);
+}
+
+.empty-cart-message h2 {
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-primary);
+}
+
+@media (max-width: 968px) {
+  .checkout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .order-summary {
+    position: static;
+  }
+}

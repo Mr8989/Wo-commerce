@@ -1,0 +1,69 @@
+.order-confirmation {
+  padding: var(--spacing-xxl) 0;
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirmation-card {
+  background-color: var(--color-white);
+  padding: var(--spacing-xxl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  max-width: 600px;
+}
+
+.success-icon {
+  color: var(--color-success);
+  margin-bottom: var(--spacing-lg);
+}
+
+.confirmation-card h1 {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-primary);
+}
+
+.confirmation-message {
+  font-size: 1.1rem;
+  color: var(--color-text-light);
+  margin-bottom: var(--spacing-xxl);
+}
+
+.order-details {
+  background-color: var(--color-bg);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-xl);
+  text-align: left;
+}
+
+.order-details h2 {
+  font-size: 1.3rem;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-primary);
+}
+
+.order-details p {
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background-color: var(--color-secondary);
+  color: var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.confirmation-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+}

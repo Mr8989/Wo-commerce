@@ -1,0 +1,54 @@
+.shop {
+  padding: var(--spacing-xxl) 0;
+  min-height: calc(100vh - 80px);
+}
+
+.shop-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xxl);
+}
+
+.shop-header h1 {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-primary);
+}
+
+.shop-header p {
+  font-size: 1.2rem;
+  color: var(--color-text-light);
+}
+
+.shop-filters {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xxl);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.filter-btn {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid var(--color-border);
+  background-color: var(--color-white);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.9rem;
+}
+
+.filter-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.filter-btn.active {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary);
+}
