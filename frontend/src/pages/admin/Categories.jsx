@@ -118,6 +118,7 @@ function AdminCategories() {
             <Link to="/admin/products" className="admin-nav-link">Products</Link>
             <Link to="/admin/orders" className="admin-nav-link">Orders</Link>
             <Link to="/admin/categories" className="admin-nav-link active">Categories</Link>
+            <Link to="/admin/settings" className="admin-nav-link">Settings</Link>
           </nav>
         </div>
         <button onClick={handleLogout} className="btn btn-outline logout-btn-admin">

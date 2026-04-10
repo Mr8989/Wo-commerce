@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, DollarSign, Wallet } from 'lucide-react';
+import { CreditCard, Wallet } from 'lucide-react';
 import { useStore, getFingerprint } from '../store';
 import api from '../api';
 import './Checkout.css';
@@ -8,22 +8,26 @@ import './Checkout.css';
 function Checkout() {
   const navigate = useNavigate();
   const { cart, cartTotal, clearCart, userInfo, setUserInfo } = useStore();
+  
   const [formData, setFormData] = useState({
-    email: userInfo.email || '',
-    firstName: userInfo.firstName || '',
-    lastName: userInfo.lastName || '',
-    phone: userInfo.phone || '',
-    shippingAddress: '',
-    shippingCity: '',
-    shippingState: '',
-    shippingPostalCode: '',
-    shippingCountry: '',
+    email: userInfo?.email || '',
+    firstName: userInfo?.firstName || '',
+    lastName: userInfo?.lastName || '',
+    phone: userInfo?.phone || '',
+    deliveryAddress: '',
+    deliveryCity: '',
+    deliveryState: '',
+    deliveryPostalCode: '',
+    deliveryCountry: 'Ghana',
     notes: '',
     paymentMethod: 'bank_transfer',
   });
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
 
+  // Payment methods (removed cash on delivery)
   const paymentMethods = [
     {
       id: 'bank_transfer',
@@ -37,16 +41,43 @@ function Checkout() {
       icon: <Wallet size={24} />,
       description: 'MTN, Vodafone, AirtelTigo',
     },
-    {
-      id: 'cash_on_delivery',
-      name: 'Cash on Delivery',
-      icon: <DollarSign size={24} />,
-      description: 'Pay when you receive',
-    },
   ];
 
+  // Validate Ghana phone number
+  const validateGhanaPhone = (phone) => {
+    if (!phone) return false;
+    const cleanPhone = phone.replace(/[\s-]/g, '');
+    const ghanaPhoneRegex = /^(\+233|0)(2[0-9]|5[0-9])[0-9]{7}$/;
+    return ghanaPhoneRegex.test(cleanPhone);
+  };
+
+  // Format phone number
+  const formatPhoneNumber = (phone) => {
+    const cleanPhone = phone.replace(/[\s-]/g, '');
+    if (cleanPhone.startsWith('0')) {
+      return '+233' + cleanPhone.substring(1);
+    }
+    if (cleanPhone.startsWith('+233')) {
+      return cleanPhone;
+    }
+    return '+233' + cleanPhone;
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    if (name === 'phone') {
+      setPhoneError('');
+    }
+  };
+
+  const handlePhoneBlur = () => {
+    if (formData.phone && !validateGhanaPhone(formData.phone)) {
+      setPhoneError('Please enter a valid Ghana phone number');
+    } else {
+      setPhoneError('');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -54,23 +85,32 @@ function Checkout() {
     setLoading(true);
     setError('');
 
+    // Validate phone
+    if (!validateGhanaPhone(formData.phone)) {
+      setError('Please enter a valid Ghana phone number');
+      setPhoneError('Invalid phone number format');
+      setLoading(false);
+      return;
+    }
+
     try {
       const fingerprint = await getFingerprint();
+      const formattedPhone = formatPhoneNumber(formData.phone);
       
       const orderData = {
         fingerprint,
         email: formData.email,
         first_name: formData.firstName,
         last_name: formData.lastName,
-        phone: formData.phone,
+        phone: formattedPhone,
         delivery_address: formData.deliveryAddress,
         delivery_city: formData.deliveryCity,
         delivery_state: formData.deliveryState,
         delivery_postal_code: formData.deliveryPostalCode,
         delivery_country: formData.deliveryCountry,
-        notes: formData.notes,
-        payment_method: formData.paymentMethod,
         total_amount: cartTotal(),
+        payment_method: formData.paymentMethod,
+        notes: formData.notes,
         items: cart.map(item => ({
           product_id: item.product.id,
           quantity: item.quantity,
@@ -85,7 +125,7 @@ function Checkout() {
         email: formData.email,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        phone: formData.phone,
+        phone: formattedPhone,
       });
 
       clearCart();
@@ -93,8 +133,8 @@ function Checkout() {
         state: { paymentMethod: formData.paymentMethod }
       });
     } catch (err) {
-      setError('Failed to place order. Please try again.');
       console.error('Order error:', err);
+      setError(err.response?.data?.detail || 'Failed to place order. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -102,10 +142,11 @@ function Checkout() {
 
   if (cart.length === 0) {
     return (
-      <div className="checkout container">
-        <div className="empty-cart-message">
+      <div className="checkout container fade-in">
+        <div className="empty-cart">
           <h2>Your cart is empty</h2>
-          <button className="btn btn-primary" onClick={() => navigate('/shop')}>
+          <p>Add some items to your cart before checking out.</p>
+          <button onClick={() => navigate('/shop')} className="btn btn-primary">
             Continue Shopping
           </button>
         </div>
@@ -116,150 +157,223 @@ function Checkout() {
   return (
     <div className="checkout container fade-in">
       <h1>Checkout</h1>
-      
-      <div className="checkout-grid">
-        <form className="checkout-form" onSubmit={handleSubmit}>
+
+      <div className="checkout-layout">
+        <form onSubmit={handleSubmit} className="checkout-form">
+          {error && <div className="error-message">{error}</div>}
+
+          {/* Contact Information */}
           <section className="form-section">
             <h2>Contact Information</h2>
+            <div className="input-group">
+              <label>Email *</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
             <div className="grid grid-2">
               <div className="input-group">
                 <label>First Name *</label>
-                <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required />
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  required
+                />
               </div>
               <div className="input-group">
                 <label>Last Name *</label>
-                <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} required />
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                />
               </div>
             </div>
             <div className="input-group">
-              <label>Email *</label>
-              <input type="email" name="email" value={formData.email} onChange={handleChange} required />
-            </div>
-            <div className="input-group">
-              <label>Phone *</label>
-              <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required />
+              <label>Phone Number *</label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                onBlur={handlePhoneBlur}
+                placeholder="024 123 4567 or +233 24 123 4567"
+                required
+                className={phoneError ? 'error' : ''}
+              />
+              {phoneError && <span className="field-error">{phoneError}</span>}
+              <small className="field-hint">
+                Ghana mobile numbers only (MTN, Vodafone, AirtelTigo)
+              </small>
             </div>
           </section>
 
+          {/* Delivery Address */}
           <section className="form-section">
             <h2>Delivery Address</h2>
             <div className="input-group">
               <label>Address *</label>
-              <input type="text" name="deliveryAddress" value={formData.deliveryAddress} onChange={handleChange} required />
+              <input
+                type="text"
+                name="deliveryAddress"
+                value={formData.deliveryAddress}
+                onChange={handleChange}
+                required
+              />
             </div>
             <div className="grid grid-2">
               <div className="input-group">
                 <label>City *</label>
-                <input type="text" name="deliveryCity" value={formData.deliveryCity} onChange={handleChange} required />
+                <input
+                  type="text"
+                  name="deliveryCity"
+                  value={formData.deliveryCity}
+                  onChange={handleChange}
+                  required
+                />
               </div>
               <div className="input-group">
-                <label>State/Province *</label>
-                <input type="text" name="deliveryState" value={formData.deliveryState} onChange={handleChange} required />
+                <label>State/Region *</label>
+                <input
+                  type="text"
+                  name="deliveryState"
+                  value={formData.deliveryState}
+                  onChange={handleChange}
+                  required
+                />
               </div>
             </div>
             <div className="grid grid-2">
               <div className="input-group">
-                <label>Postal Code *</label>
-                <input type="text" name="deliveryPostalCode" value={formData.deliveryPostalCode} onChange={handleChange} required />
+                <label>Postal Code</label>
+                <input
+                  type="text"
+                  name="deliveryPostalCode"
+                  value={formData.deliveryPostalCode}
+                  onChange={handleChange}
+                />
               </div>
               <div className="input-group">
                 <label>Country *</label>
-                <input type="text" name="deliveryCountry" value={formData.deliveryCountry} onChange={handleChange} required />
+                <input
+                  type="text"
+                  name="deliveryCountry"
+                  value={formData.deliveryCountry}
+                  onChange={handleChange}
+                  required
+                />
               </div>
             </div>
           </section>
 
+          {/* Payment Method */}
           <section className="form-section">
             <h2>Payment Method</h2>
             <div className="payment-methods">
               {paymentMethods.map((method) => (
-                <label key={method.id} className={`payment-method ${formData.paymentMethod === method.id ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value={method.id}
-                    checked={formData.paymentMethod === method.id}
-                    onChange={handleChange}
-                  />
-                  <div className="payment-method-content">
-                    <div className="payment-icon">{method.icon}</div>
-                    <div className="payment-details">
-                      <h4>{method.name}</h4>
-                      <p>{method.description}</p>
-                    </div>
+                <div
+                  key={method.id}
+                  className={`payment-method ${formData.paymentMethod === method.id ? 'selected' : ''}`}
+                  data-method={method.id}
+                  onClick={() => setFormData({ ...formData, paymentMethod: method.id })}
+                >
+                  <div className="payment-icon">
+                    {method.icon}
                   </div>
-                </label>
+                  <h3>{method.name}</h3>
+                  <p>{method.description}</p>
+                </div>
               ))}
             </div>
 
+            {/* Payment Instructions */}
             {formData.paymentMethod === 'bank_transfer' && (
               <div className="payment-instructions">
-                <h4>Bank Transfer Instructions</h4>
-                <p>Please transfer to:</p>
-                <ul>
-                  <li><strong>Bank:</strong> Ghana Commercial Bank</li>
-                  <li><strong>Account Name:</strong> Florence Dabrah Odjer</li>
-                  <li><strong>Account Number:</strong>1021010060614 </li>
-                </ul>
-                <p className="note">Send proof of payment to whatsApp number: 0544893583</p>
+                <h4>Bank Transfer Details</h4>
+                <div className="payment-details">
+                  <p><strong>Bank Name:</strong> Ghana Commercial Bank</p>
+                  <p><strong>Account Name:</strong>Florence Dabrah Odjer </p>
+                  <p><strong>Account Number:</strong> 1021010060614</p>
+                  <p><strong>Branch:</strong> Ho Branch</p>
+                </div>
+                <p className="payment-note">
+                  Please transfer the exact amount and send proof of payment to our email or WhatsApp.
+                </p>
               </div>
             )}
 
             {formData.paymentMethod === 'mobile_money' && (
               <div className="payment-instructions">
-                <h4>Mobile Money Instructions</h4>
-                <p>Send payment to:</p>
-                <ul>
-                  <li><strong>MTN:</strong> 0544893583</li>
-                  <li><strong>Name:</strong>Florence Dabrah Odjer</li>
-                </ul>
-                <p className="note">Send proof of payment to whatsApp number: 0544893583</p>
+                <h4>Mobile Money Details</h4>
+                <div className="payment-details">
+                  <p><strong>MTN:</strong> +233 54 489 3583</p>
+                  <p><strong>Name:</strong> Florence Dabrah Odjer</p>
+                </div>
+                <p className="payment-note">
+                  Send exact amount to the number above and send confirmation SMS or WhatsApp message.
+                </p>
               </div>
             )}
+          </section>
 
-            {formData.paymentMethod === 'cash_on_delivery' && (
-              <div className="payment-instructions">
-                <h4>Cash on Delivery</h4>
-                <p>Pay with cash when your order is delivered.</p>
-                <ul>
-                  <li>Have exact amount ready</li>
-                  <li>Payment to delivery agent</li>
-                  <li>Receipt will be provided</li>
-                </ul>
-              </div>
-            )}
-
+          {/* Order Notes */}
+          <section className="form-section">
+            <h2>Order Notes (Optional)</h2>
             <div className="input-group">
-              <label>Order Notes (Optional)</label>
-              <textarea name="notes" value={formData.notes} onChange={handleChange} rows="3" placeholder="Special instructions or delivery notes..." />
+              <label>Additional Information</label>
+              <textarea
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                rows="4"
+                placeholder="Any special instructions for your order?"
+              />
             </div>
           </section>
 
-          {error && <div className="error-message">{error}</div>}
-
-          <button type="submit" className="btn btn-primary btn-place-order" disabled={loading}>
-            {loading ? 'Processing...' : 'Place Order'}
+          <button type="submit" className="btn btn-primary btn-large" disabled={loading}>
+            {loading ? 'Processing...' : `Place Order - GH₵${cartTotal()}`}
           </button>
         </form>
 
-        <div className="order-summary">
+        {/* Order Summary */}
+        <aside className="order-summary">
           <h2>Order Summary</h2>
           <div className="summary-items">
             {cart.map((item) => (
               <div key={`${item.product.id}-${item.size}`} className="summary-item">
+                <img src={item.product.image_display || item.product.image_url} alt={item.product.name} />
                 <div className="summary-item-details">
-                  <p className="summary-item-name">{item.product.name}</p>
-                  <p className="summary-item-meta">Size: {item.size} × {item.quantity}</p>
+                  <h4>{item.product.name}</h4>
+                  <p>Size: {item.size} | Qty: {item.quantity}</p>
+                  <p className="summary-item-price">GH₵{item.product.price * item.quantity}</p>
                 </div>
-                <p className="summary-item-price">₵{(item.product.price * item.quantity).toFixed(2)}</p>
               </div>
             ))}
           </div>
-          <div className="summary-total">
-            <span>Total</span>
-            <span className="total-amount">₵{cartTotal().toFixed(2)}</span>
+          <div className="summary-totals">
+            <div className="summary-row">
+              <span>Subtotal</span>
+              <span>GH₵{cartTotal()}</span>
+            </div>
+            <div className="summary-row">
+              <span>Delivery</span>
+              {/* <span>Free</span> */}
+            </div>
+            <div className="summary-row total">
+              <strong>Total</strong>
+              <strong>GH₵{cartTotal()}</strong>
+            </div>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   );

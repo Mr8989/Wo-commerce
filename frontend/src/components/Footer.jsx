@@ -1,5 +1,6 @@
 import { Heart } from 'lucide-react';
 import './Footer.css';
+import logo from '../images/logo.png'
 
 function Footer() {
   return (
@@ -7,7 +8,8 @@ function Footer() {
       <div className="container">
         <div className="footer-content">
           <div className="footer-section">
-            <h3>Cropped By AYERKIE</h3>
+            {/* <h3>Cropped By AYERKIE</h3> */}
+            <img src={logo} alt="Cropped By AYERKIE" width={200} height={200} />
             <p>Elevating women's fashion with timeless elegance and contemporary style.</p>
           </div>
           <div className="footer-section">
@@ -15,14 +17,14 @@ function Footer() {
             <ul>
               <li><a href="/shop">Shop</a></li>
               <li><a href="/about">About Us</a></li>
-              <li><a href="/contact">Contact</a></li>
+              <li><a href="/about">Contact</a></li>
             </ul>
           </div>
           <div className="footer-section">
             <h4>Customer Service</h4>
             <ul>
-              <li><a href="/shipping">Shipping Info</a></li>
-              <li><a href="/returns">Returns</a></li>
+              <li><a href="/track-order">Shipping Info</a></li>
+              <li><a href="/">Returns</a></li>
               <li><a href="/faq">FAQ</a></li>
             </ul>
           </div>

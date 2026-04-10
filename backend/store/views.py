@@ -1,15 +1,67 @@
 from urllib import request
-
+from .notification import send_order_notifications, send_status_update_sms
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.http import Http404
 from .models import Category, Product, Order, AnonymousUser, CartItem
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from django.conf import settings
+from .admin_utils import update_env_file
+from django.utils import timezone
 from .serializers import (
     CategorySerializer, ProductSerializer, OrderSerializer,
     AnonymousUserSerializer, CartItemSerializer
 )
+from .models import AdminUser
+from .serializers_admin import(
+    AdminLoginSerializer, 
+    AdminChangePasswordSerializer,
+    AdminUserSerializer
+)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def change_admin_password(request):
+    """Change admin password"""
+    current_password = request.data.get('current_password')
+    new_password = request.data.get('new_password')
+    username = request.data.get('username')
+    
+    # Verify current credentials
+    stored_username = settings.ADMIN_USERNAME
+    stored_password = settings.ADMIN_PASSWORD
+    
+    if username != stored_username or current_password != stored_password:
+        return Response(
+            {'error': 'Invalid credentials'},
+            status=400
+        )
+    
+    # Validate new password
+    if len(new_password) < 8:
+        return Response(
+            {'error': 'Password must be at least 8 characters'},
+            status=400
+        )
+    
+    # Update .env file (frontend)
+    # Note: This updates backend .env, you'll need to manually update frontend/.env
+    
+    return Response({
+        'message': 'Password validation successful',
+        'new_password': new_password,
+        'instructions': [
+            'Update frontend/.env file with:',
+            f'VITE_ADMIN_PASSWORD={new_password}',
+            'Restart frontend server (npm run dev)',
+            'Your new password will be active after restart'
+        ]
+    })
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -17,45 +69,33 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
 
 
+from django.shortcuts import get_object_or_404
+
 class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.filter(is_active=True)
-    serializer_class = ProductSerializer 
-    permission_classes = [permissions.AllowAny] 
-     #lookup_field = 'slug'   Keep for detail pages
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    permission_classes = [permissions.AllowAny]
     
     def get_object(self):
         """
         Allow lookup by both ID and slug
         """
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        lookup_value = self.kwargs.get('pk')
         
-        # Try to get by slug first
-        if lookup_url_kwarg in self.kwargs:
-            filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-            try:
-                obj = self.get_queryset().get(**filter_kwargs)
-                self.check_object_permissions(self.request, obj)
-                return obj
-            except Product.DoesNotExist:
-                pass
+        # Try to get by ID first (for admin operations)
+        if lookup_value.isdigit():
+            return get_object_or_404(Product, id=int(lookup_value))
         
-        # Fall back to ID if slug doesn't work
-        try:
-            obj = self.get_queryset().get(pk=self.kwargs.get(lookup_url_kwarg))
-            self.check_object_permissions(self.request, obj)
-            return obj
-        except Product.DoesNotExist:
-            raise Http404
-
+        # Fall back to slug (for frontend product pages)
+        return get_object_or_404(Product, slug=lookup_value)
+    
     def get_queryset(self):
-        queryset = super().get_queryset()
-        
-        # Filter by category
+        queryset = Product.objects.all()
+          
         category = self.request.query_params.get('category', None)
         if category:
             queryset = queryset.filter(category__slug=category)
         
-        # Filter by search query
         search = self.request.query_params.get('search', None)
         if search:
             queryset = queryset.filter(
@@ -63,12 +103,10 @@ class ProductViewSet(viewsets.ModelViewSet):
                 Q(description__icontains=search)
             )
         
-        # Filter featured products
         featured = self.request.query_params.get('featured', None)
         if featured:
             queryset = queryset.filter(is_featured=True)
         
-        # Sort options
         sort_by = self.request.query_params.get('sort', None)
         if sort_by == 'price_low':
             queryset = queryset.order_by('price')
@@ -79,9 +117,14 @@ class ProductViewSet(viewsets.ModelViewSet):
         
         return queryset
 
-@action(detail=False, methods=['get'])
-def featured(self, request):
-        featured_products = self.queryset.filter(is_featured=True)[:8]
+    @action(detail=False, methods=['get'], url_path='featured')
+    def featured(self, request):
+        """Get featured products"""
+        featured_products = Product.objects.filter(
+            is_featured=True, 
+            is_active=True
+        ).order_by('-created_at')[:8]
+        
         serializer = self.get_serializer(featured_products, many=True)
         return Response(serializer.data)
 
@@ -153,10 +196,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         if status_filter:
             queryset = queryset.filter(status=status_filter)
         
+        # Search by order number
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(order_number__icontains=search)
+        
         return queryset
     
     def create(self, request, *args, **kwargs):
-        # Get or create anonymous user
         fingerprint = request.data.get('fingerprint')
         anonymous_user = None
         if fingerprint:
@@ -170,7 +217,6 @@ class OrderViewSet(viewsets.ModelViewSet):
                 }
             )
         
-        # Create order
         order_data = {
             'anonymous_user': anonymous_user,
             'email': request.data.get('email'),
@@ -191,7 +237,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
         
-        # Add order items
         items = request.data.get('items', [])
         for item in items:
             order.items.create(
@@ -201,26 +246,44 @@ class OrderViewSet(viewsets.ModelViewSet):
                 price=item['price']
             )
         
-        # Clear cart
         if fingerprint and anonymous_user:
             CartItem.objects.filter(anonymous_user=anonymous_user).delete()
+        
+        # Send notifications (SMS to customer, Email to admin)
+        try:
+            send_order_notifications(order)
+        except Exception as e:
+            print(f"Notification error: {e}")
         
         return Response(
             OrderSerializer(order, context={'request': request}).data,
             status=status.HTTP_201_CREATED
         )
     
+    def partial_update(self, request, *args, **kwargs):
+        """Update order status and send notification"""
+        order = self.get_object()
+        old_status = order.status
+        
+        response = super().partial_update(request, *args, **kwargs)
+        
+        new_status = request.data.get('status')
+        
+        # Send SMS notification if status changed
+        if new_status and new_status != old_status:
+            try:
+                send_status_update_sms(order, new_status)
+            except Exception as e:
+                print(f"Status SMS error: {e}")
+        
+        return response
+    
     def destroy(self, request, *args, **kwargs):
-        """
-        Delete an order and all its items
-        """
+        """Delete order"""
         try:
             order = self.get_object()
             order_number = order.order_number
-            
-            # Delete order (items will cascade delete automatically)
             order.delete()
-            
             return Response(
                 {"message": f"Order {order_number} deleted successfully"},
                 status=status.HTTP_204_NO_CONTENT
@@ -230,29 +293,174 @@ class OrderViewSet(viewsets.ModelViewSet):
                 {"error": "Order not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-        except Exception as e:
+    
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        """
+        Allow customer to cancel their order
+        URL: /api/orders/{id}/cancel/
+        """
+        order = self.get_object()
+        
+        # Only allow cancellation if order is pending or processing
+        if order.status in ['pending', 'processing']:
+            order.status = 'cancelled'
+            order.save()
+            
+            # Notify customer
+            try:
+                send_status_update_sms(order, 'cancelled')
+            except Exception as e:
+                print(f"Cancellation SMS error: {e}")
+            
+            return Response({
+                'message': 'Order cancelled successfully',
+                'order': OrderSerializer(order, context={'request': request}).data
+            })
+        else:
             return Response(
-                {"error": f"Failed to delete order: {str(e)}"},
+                {'error': f'Cannot cancel order with status: {order.status}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
     
-    def partial_update(self, request, *args, **kwargs):
-        """
-        Update order status
-        """
-        return super().partial_update(request, *args, **kwargs)
-    
     @action(detail=False, methods=['get'])
     def stats(self, request):
-        """
-        Get order statistics for dashboard
-        """
+        """Get order statistics for dashboard"""
         stats = {
             'total_orders': Order.objects.count(),
             'pending_orders': Order.objects.filter(status='pending').count(),
             'processing_orders': Order.objects.filter(status='processing').count(),
             'total_revenue': Order.objects.aggregate(
-                total=sum('total_amount')
+                total=Sum('total_amount')
             )['total'] or 0,
         }
         return Response(stats)
+    
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def admin_login(request):
+    """Admin login endpoint"""
+    print("=" * 50)
+    print("LOGIN ATTEMPT")
+    print(f"Request data: {request.data}")
+    
+    serializer = AdminLoginSerializer(data=request.data)
+    
+    if not serializer.is_valid():
+        print(f" Serializer invalid: {serializer.errors}")
+        return Response(
+            {'error': 'Invalid input'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    username = serializer.validated_data['username']
+    password = serializer.validated_data['password']
+    
+    print(f"Username: {username}")
+    print(f"Password length: {len(password)}")
+    
+    try:
+        admin = AdminUser.objects.get(username=username, is_active=True)
+        print(f" Found admin: {admin.username}")
+        
+        password_valid = admin.check_password(password)
+        print(f"Password valid: {password_valid}")
+        
+        if password_valid:
+            # Update last login
+            admin.last_login = timezone.now()
+            admin.save()
+            
+            print("Login successful")
+            return Response({
+                'success': True,
+                'message': 'Login successful',
+                'user': AdminUserSerializer(admin).data,
+                'token': str(admin.id)
+            })
+        else:
+            print("Password incorrect")
+            return Response(
+                {'error': 'Invalid credentials'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+    
+    except AdminUser.DoesNotExist:
+        print(f" Admin user '{username}' not found")
+        return Response(
+            {'error': 'Invalid credentials'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def admin_change_password(request):
+    """Change admin password"""
+    serializer = AdminChangePasswordSerializer(data=request.data)
+    
+    if not serializer.is_valid():
+        return Response(
+            {'errors': serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    username = request.data.get('username')
+    current_password = serializer.validated_data['current_password']
+    new_password = serializer.validated_data['new_password']
+    
+    try:
+        admin = AdminUser.objects.get(username=username, is_active=True)
+        
+        if not admin.check_password(current_password):
+            return Response(
+                {'error': 'Current password is incorrect'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if current_password == new_password:
+            return Response(
+                {'error': 'New password must be different from current password'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Set new password
+        admin.set_password(new_password)
+        admin.save()
+        
+        return Response({
+            'success': True,
+            'message': 'Password changed successfully'
+        })
+    
+    except AdminUser.DoesNotExist:
+        return Response(
+            {'error': 'Admin user not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def admin_verify(request):
+    """Verify admin token"""
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    
+    if not token:
+        return Response(
+            {'error': 'No token provided'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+    
+    try:
+        admin = AdminUser.objects.get(id=token, is_active=True)
+        return Response({
+            'success': True,
+            'user': AdminUserSerializer(admin).data
+        })
+    except (AdminUser.DoesNotExist, ValueError):
+        return Response(
+            {'error': 'Invalid token'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )

@@ -74,6 +74,18 @@ DATABASES = {
     }
 }
 
+# ── Rate limiting ─────────────────────────────────────────────────────────────
+AXES_ENABLED = not DEBUG # Disable in development for easier testing and enabled in production
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1
+AXES_RESET_ON_SUCCESS = True
+AXES_HANDLER = 'axes.handlers.database.AxesDatabaseHandler'
+AXES_LOCKOUT_CALLABLE = 'api.utils.axes_lockout_response'
+AXES_META_PRECEDENCE_ORDER = [
+    'HTTP_X_FORWARDED_FOR',
+    'REMOTE_ADDR',
+]
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -88,6 +100,34 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', default=587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', default=True) == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', default='odjerflorence610@gmail.com')
+ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', default=EMAIL_HOST_USER)
+
+# Admin Credentials
+ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', default='admin')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', default='admin123')
+
+# SMS Configuration
+AFRICAS_TALKING_USERNAME = os.getenv('AFRICAS_TALKING_USERNAME', default='sandbox')
+AFRICAS_TALKING_API_KEY = os.getenv('AFRICAS_TALKING_API_KEY', default='')
+ADMIN_PHONE_NUMBER = os.getenv('ADMIN_PHONE_NUMBER', default='+233000000000')
+
+# ── Security (production only)
+if not DEBUG:
+    SESSION_COOKIE_SECURE       = True
+    CSRF_COOKIE_SECURE          = True
+    SECURE_HSTS_SECONDS         = 31536000
+    SECURE_BROWSER_XSS_FILTER   = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS             = 'DENY'
 
 LANGUAGE_CODE = 'en-us'
 

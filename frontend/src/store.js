@@ -4,25 +4,42 @@ import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import api from './api';
 
 // Initialize fingerprint
-let fingerprint = null;
 const fpPromise = FingerprintJS.load();
-fpPromise.then(fp => fp.get()).then(result => {
-  fingerprint = result.visitorId;
-});
 
 export const getFingerprint = async () => {
-  if (fingerprint) return fingerprint;
   const fp = await fpPromise;
   const result = await fp.get();
-  fingerprint = result.visitorId;
-  return fingerprint;
+  return result.visitorId;
 };
 
 export const useStore = create(
   persist(
     (set, get) => ({
-      // User tracking
+      // Cart state
       userFingerprint: null,
+      setUserFingerprint: (fp) => set({ userFingerprint: fp }),
+      cart: [],
+      
+      // Products and Categories state
+      products: [],
+      categories: [],
+      selectedCategory: null,
+      
+      // Admin authentication
+      isAdmin: false,
+      adminToken: null,
+      adminUser: null,
+      
+      // Set products
+      setProducts: (products) => set({ products }),
+      
+      // Set categories
+      setCategories: (categories) => set({ categories }),
+      
+      // Set selected category
+      setSelectedCategory: (category) => set({ selectedCategory: category }),
+      
+      // User info
       userInfo: {
         email: '',
         firstName: '',
@@ -30,126 +47,176 @@ export const useStore = create(
         phone: '',
       },
 
-      // Admin authentication
-      isAdmin: false,
-      adminToken: null,
+      // Set user info
+      setUserInfo: (info) => set({ userInfo: info }),
 
-      // Cart
-      cart: [],
-      
-      // Products
-      products: [],
-      categories: [],
-      featuredProducts: [],
-      
-      // Filters
-      selectedCategory: null,
-      searchQuery: '',
-      sortBy: 'newest',
+      // Admin login (NEW - API-based)
+      login: async (credentials) => {
+        try {
+          const response = await api.post('/admin/login/', credentials);
+          
+          if (response.data.success) {
+            set({ 
+              isAdmin: true,
+              adminToken: response.data.token,
+              adminUser: response.data.user
+            });
+            
+            // Store token in localStorage for API calls
+            localStorage.setItem('adminToken', response.data.token);
+            
+            return { success: true };
+          }
+          
+          return { success: false, error: 'Login failed' };
+        } catch (error) {
+          console.error('Login error:', error);
+          return { 
+            success: false, 
+            error: error.response?.data?.error || 'Login failed' 
+          };
+        }
+      },
 
-      // UI State
-      isCartOpen: false,
-      isLoading: false,
+      // Admin logout
+      logout: () => {
+        localStorage.removeItem('adminToken');
+        set({ 
+          isAdmin: false,
+          adminToken: null,
+          adminUser: null
+        });
+      },
 
-      // Actions
-      setUserFingerprint: (fp) => set({ userFingerprint: fp }),
-      
-      // Admin actions
-      setIsAdmin: (isAdmin) => set({ isAdmin }),
-      setAdminToken: (token) => set({ adminToken: token }),
-      logout: () => set({ isAdmin: false, adminToken: null }),
-      
-      setUserInfo: (info) => set({ userInfo: { ...get().userInfo, ...info } }),
+      // Check if admin is authenticated
+      isAdminAuthenticated: () => get().isAdmin,
 
-      addToCart: async (product, size, quantity = 1) => {
+      // Verify admin token (on app load)
+      verifyAdmin: async () => {
+        const token = localStorage.getItem('adminToken');
+        
+        if (!token) {
+          set({ isAdmin: false, adminToken: null, adminUser: null });
+          return false;
+        }
+        
+        try {
+          const response = await api.get('/admin/verify/', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (response.data.success) {
+            set({ 
+              isAdmin: true,
+              adminToken: token,
+              adminUser: response.data.user
+            });
+            return true;
+          }
+          
+          get().logout();
+          return false;
+        } catch (error) {
+          console.error('Token verification failed:', error);
+          get().logout();
+          return false;
+        }
+      },
+
+      // Change admin password (NEW - API-based)
+      changePassword: async (currentPassword, newPassword) => {
+        const adminUser = get().adminUser;
+        
+        if (!adminUser) {
+          return { success: false, error: 'Not authenticated' };
+        }
+        
+        try {
+          const response = await api.post('/admin/change-password/', {
+            username: adminUser.username,
+            current_password: currentPassword,
+            new_password: newPassword
+          });
+          
+          if (response.data.success) {
+            return { success: true, message: response.data.message };
+          }
+          
+          return { success: false, error: 'Password change failed' };
+        } catch (error) {
+          console.error('Password change error:', error);
+          return { 
+            success: false, 
+            error: error.response?.data?.error || error.response?.data?.errors || 'Password change failed' 
+          };
+        }
+      },
+
+      // Add to cart
+      addToCart: (product, size, quantity = 1) => {
         const cart = get().cart;
-        const existingItem = cart.find(
-          item => item.product.id === product.id && item.size === size
+        const existingItemIndex = cart.findIndex(
+          (item) => item.product.id === product.id && item.size === size
         );
 
-        let newCart;
-        if (existingItem) {
-          newCart = cart.map(item =>
-            item.product.id === product.id && item.size === size
-              ? { ...item, quantity: item.quantity + quantity }
-              : item
-          );
+        if (existingItemIndex > -1) {
+          const newCart = [...cart];
+          newCart[existingItemIndex].quantity += quantity;
+          set({ cart: newCart });
         } else {
-          newCart = [...cart, { product, size, quantity }];
-        }
-
-        set({ cart: newCart });
-
-        // Sync with backend
-        try {
-          const fp = await getFingerprint();
-          await api.post('/cart/', {
-            fingerprint: fp,
-            product_id: product.id,
-            size,
-            quantity,
-          });
-        } catch (error) {
-          console.error('Failed to sync cart with backend:', error);
+          set({ cart: [...cart, { product, size, quantity }] });
         }
       },
 
+      // Remove from cart
       removeFromCart: (productId, size) => {
-        set({ cart: get().cart.filter(
-          item => !(item.product.id === productId && item.size === size)
-        )});
-      },
-
-      updateCartItemQuantity: (productId, size, quantity) => {
         set({
-          cart: get().cart.map(item =>
-            item.product.id === productId && item.size === size
-              ? { ...item, quantity }
-              : item
+          cart: get().cart.filter(
+            (item) => !(item.product.id === productId && item.size === size)
           ),
         });
       },
 
-      clearCart: async () => {
-        set({ cart: [] });
-        try {
-          const fp = await getFingerprint();
-          await api.post('/cart/clear/', { fingerprint: fp });
-        } catch (error) {
-          console.error('Failed to clear cart:', error);
+      // Update quantity
+      updateQuantity: (productId, size, quantity) => {
+        const cart = get().cart;
+        const itemIndex = cart.findIndex(
+          (item) => item.product.id === productId && item.size === size
+        );
+
+        if (itemIndex > -1) {
+          const newCart = [...cart];
+          newCart[itemIndex].quantity = quantity;
+          set({ cart: newCart });
         }
       },
 
-      toggleCart: () => set({ isCartOpen: !get().isCartOpen }),
+      // Clear cart
+      clearCart: () => set({ cart: [] }),
 
-      setProducts: (products) => set({ products }),
-      setCategories: (categories) => set({ categories }),
-      setFeaturedProducts: (products) => set({ featuredProducts: products }),
-      setSelectedCategory: (category) => set({ selectedCategory: category }),
-      setSearchQuery: (query) => set({ searchQuery: query }),
-      setSortBy: (sort) => set({ sortBy: sort }),
-      setIsLoading: (loading) => set({ isLoading: loading }),
-
-      // Computed
+      // Cart total
       cartTotal: () => {
-        return get().cart.reduce(
-          (total, item) => total + item.product.price * item.quantity,
-          0
-        );
+        return get()
+          .cart.reduce(
+            (total, item) => total + item.product.price * item.quantity,
+            0
+          )
+          .toFixed(2);
       },
 
-      cartItemCount: () => {
-        return get().cart.reduce((total, item) => total + item.quantity, 0);
+      // Cart count
+      cartCount: () => {
+        return get().cart.reduce((count, item) => count + item.quantity, 0);
       },
     }),
     {
-      name: 'womens-wear-storage',
+      name: 'femme-store',
       partialize: (state) => ({
         cart: state.cart,
         userInfo: state.userInfo,
-        userFingerprint: state.userFingerprint,
         isAdmin: state.isAdmin,
         adminToken: state.adminToken,
+        adminUser: state.adminUser,
       }),
     }
   )

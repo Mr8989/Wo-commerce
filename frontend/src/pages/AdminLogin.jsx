@@ -1,92 +1,85 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Lock, User, AlertCircle } from 'lucide-react';
 import { useStore } from '../store';
 import './AdminLogin.css';
 
 function AdminLogin() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { setIsAdmin, setAdminToken } = useStore();
+  const { login } = useStore();
   const navigate = useNavigate();
-
-  const ADMIN_USERNAME = import.meta.env.VITE_ADMIN;
-  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    setLoading(true);
 
-    try {
-      // Simple authentication - in production, use Django's token authentication
-      // For now, checking against default admin credentials
-      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-        setIsAdmin(true);
-        setAdminToken('admin-token-' + Date.now());
-        navigate('/admin');
-      } else {
-        setError('Invalid username or password');
-      }
-    } catch (err) {
-      setError('Login failed. Please try again.');
-    } finally {
-      setLoading(false);
+    const result = await login(credentials);
+    
+    if (result.success) {
+      navigate('/admin');
+    } else {
+      setError(result.error || 'Invalid username or password');
     }
+    
+    setLoading(false);
   };
 
   return (
-    <div className="admin-login fade-in">
+    <div className="admin-login">
       <div className="login-container">
-        <div className="login-card">
+        <div className="login-header">
+          <Lock size={48} />
           <h1>Admin Login</h1>
-          <p className="login-subtitle">Access the admin dashboard</p>
+          <p>Access your dashboard</p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="login-form">
-            {error && <div className="error-message">{error}</div>}
+        <form onSubmit={handleSubmit} className="login-form">
+          {error && (
+            <div className="error-message">
+              <AlertCircle size={20} />
+              <span>{error}</span>
+            </div>
+          )}
 
-            <div className="input-group">
-              <label>Username</label>
+          <div className="input-group">
+            <label htmlFor="username">Username</label>
+            <div className="input-wrapper">
+              <User size={20} />
               <input
                 type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                id="username"
+                value={credentials.username}
+                onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
                 required
-                autoFocus
+                autoComplete="username"
+                disabled={loading}
               />
             </div>
+          </div>
 
-            <div className="input-group">
-              <label>Password</label>
+          <div className="input-group">
+            <label htmlFor="password">Password</label>
+            <div className="input-wrapper">
+              <Lock size={20} />
               <input
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                id="password"
+                value={credentials.password}
+                onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
                 required
+                autoComplete="current-password"
+                disabled={loading}
               />
             </div>
+          </div>
 
-            <button 
-              type="submit" 
-              className="btn btn-primary login-btn"
-              disabled={loading}
-            >
-              {loading ? 'Logging in...' : 'Login'}
-            </button>
-          </form>
-
-          {/* <div className="login-info">
-            <p>Default credentials:</p>
-            <p><strong>Username:</strong> admin</p>
-            <p><strong>Password:</strong> admin123</p>
-            <p className="info-note">
-              💡 Change these in production! Update the credentials in the AdminLogin component.
-            </p>
-          </div> */}
-        </div>
+          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
       </div>
     </div>
   );

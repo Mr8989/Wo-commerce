@@ -17,6 +17,7 @@ function Home() {
     '/slide4.jpg',
     '/slide5.jpg',
     '/slide6.jpg',
+    '/slide7.jpeg',
   ];
 
   // Fetch featured products
@@ -92,13 +93,13 @@ function Home() {
       <section className="features">
         <div className="container">
           <div className="features-grid">
-            <div className="feature-card">
+            {/* <div className="feature-card">
               <div className="feature-icon">
                 <Truck size={32} />
               </div>
               <h3>Free Delivery</h3>
-              <p>On orders over GH₵200</p>
-            </div>
+              <p>On orders over GH₵1000</p>
+            </div> */}
             <div className="feature-card">
               <div className="feature-icon">
                 <Shield size={32} />
@@ -113,13 +114,13 @@ function Home() {
               <h3>Quality Guarantee</h3>
               <p>Premium materials only</p>
             </div>
-            <div className="feature-card">
+            {/* <div className="feature-card">
               <div className="feature-icon">
                 <ShoppingBag size={32} />
               </div>
               <h3>Easy Returns</h3>
               <p>30-day return policy</p>
-            </div>
+            </div> */}
           </div>
         </div>
       </section>
@@ -150,7 +151,7 @@ function Home() {
                 <div className="product-info">
                   <p className="product-category">{product.category_name}</p>
                   <h3 className="product-name">{product.name}</h3>
-                  <p className="product-price">${product.price}</p>
+                  <p className="product-price">{product.price}</p>
                 </div>
               </Link>
             ))}

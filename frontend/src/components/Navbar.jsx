@@ -3,11 +3,13 @@ import { ShoppingBag, Search, Menu, X, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { useStore } from '../store';
 import './Navbar.css';
+import logo from '../images/logo.png'
 
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { toggleCart, cartItemCount, isAdmin, logout } = useStore();
-  const itemCount = cartItemCount();
+  const itemCount = cartItemCount ? cartItemCount() : 0;
+
   const navigate = useNavigate();
 
   const handleAdminClick = (e) => {
@@ -27,7 +29,8 @@ function Navbar() {
     <nav className="navbar">
       <div className="navbar-container container">
         <Link to="/" className="navbar-logo">
-          <span className="logo-text">Cropped By AYERKIE</span>
+          {/* <span className="logo-text">Cropped By AYERKIE</span> */}
+          <img src={logo} alt="Cropped By AYERKIE" width={150} height={150} />
         </Link>
 
         <button 
@@ -75,11 +78,11 @@ function Navbar() {
           >
             {/* <User size={20} /> */}
           </Link>
-          {isAdmin && (
+          {/* {isAdmin && (
             <button className="navbar-icon-btn" onClick={handleLogout} title="Logout">
               <LogOut size={20} />
             </button>
-          )}
+          )} */}
           <button className="navbar-icon-btn cart-btn" onClick={toggleCart}>
             <ShoppingBag size={20} />
             {itemCount > 0 && (

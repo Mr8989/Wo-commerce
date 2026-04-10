@@ -1,3 +1,193 @@
+/* Filters */
+.orders-filters {
+  background: var(--color-white);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.filter-group label {
+  display: block;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.status-filters {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--color-border);
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.filter-btn:hover {
+  border-color: var(--color-secondary);
+  transform: translateY(-2px);
+}
+
+.filter-btn.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* Status Guide */
+.status-guide {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-lg);
+  overflow-x: auto;
+}
+
+.guide-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-width: fit-content;
+}
+
+.guide-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guide-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.guide-text strong {
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.guide-text span {
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+}
+
+.guide-arrow {
+  color: var(--color-text-light);
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* Status Cell */
+.status-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-badge-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.quick-status-btn {
+  background: none;
+  border: 2px solid #4CAF50;
+  color: #4CAF50;
+  padding: 0.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.quick-status-btn:hover {
+  background: #4CAF50;
+  color: white;
+  transform: scale(1.1);
+}
+
+/* Status Update Section in Modal */
+.status-update-section {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+}
+
+.status-update-section label {
+  display: block;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-primary);
+}
+
+.status-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.status-option-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: var(--spacing-md);
+  border: 2px solid;
+  background: transparent;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.status-option-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.status-option-btn.active {
+  color: white !important;
+}
+
+.status-note {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  margin: 0;
+  padding: var(--spacing-sm);
+  background: rgba(33, 150, 243, 0.1);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid #2196F3;
+}
+
+/* Existing modal styles... */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -96,4 +286,19 @@
 
 .modal-footer .btn {
   min-width: 120px;
+}
+
+@media (max-width: 768px) {
+  .status-guide {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .guide-arrow {
+    transform: rotate(90deg);
+  }
+
+  .status-options {
+    grid-template-columns: 1fr;
+  }
 }

@@ -38,19 +38,19 @@ function About() {
           <h2>Our Values</h2>
           <div className="values-grid">
             <div className="value-item">
-              <h3>✨ Quality First</h3>
+              <h3> Quality First</h3>
               <p>Every piece is carefully selected for its craftsmanship and durability</p>
             </div>
             <div className="value-item">
-              <h3>💖 Customer Care</h3>
+              <h3> Customer Care</h3>
               <p>Your satisfaction is our priority. We're here to help every step of the way</p>
             </div>
             <div className="value-item">
-              <h3>🌟 Style Diversity</h3>
+              <h3> Style Diversity</h3>
               <p>Fashion for every woman, every occasion, every style</p>
             </div>
             <div className="value-item">
-              <h3>🤝 Trust & Transparency</h3>
+              <h3> Trust & Transparency</h3>
               <p>Honest pricing, clear policies, and reliable service</p>
             </div>
           </div>

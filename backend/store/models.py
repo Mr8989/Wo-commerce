@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.hashers import make_password, check_password
 import uuid
 
 
@@ -144,3 +145,36 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.product.name}"
+    
+class AdminUser(models.Model):
+    """Admin user for dashboard access"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    username = models.CharField(max_length=150, unique=True)
+    password = models.CharField(max_length=128)  # Hashed password
+    email = models.EmailField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_login = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'admin_users'
+        verbose_name = 'Admin User'
+        verbose_name_plural = 'Admin Users'
+
+    def __str__(self):
+        return self.username
+
+    def set_password(self, raw_password):
+        """Hash and set password"""
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        """Verify password"""
+        return check_password(raw_password, self.password)
+
+    def save(self, *args, **kwargs):
+        # Hash password if it's not already hashed
+        if self.password and not self.password.startswith('pbkdf2_'):
+            self.set_password(self.password)
+        super().save(*args, **kwargs)

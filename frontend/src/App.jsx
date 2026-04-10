@@ -16,10 +16,14 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminProducts from './pages/admin/Products';
 import AdminOrders from './pages/admin/Orders';
 import AdminCategories from './pages/admin/Categories';
+import TrackOrder from './pages/TrackOrder';
+import AdminSettings from './pages/admin/Settings';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
   const setUserFingerprint = useStore(state => state.setUserFingerprint);
+  const {verifyAdmin} = useStore();
 
   useEffect(() => {
     // Initialize user fingerprint
@@ -27,6 +31,10 @@ function App() {
       setUserFingerprint(fp);
     });
   }, [setUserFingerprint]);
+
+  useEffect(() => {
+    verifyAdmin()
+  }, [verifyAdmin])
 
   return (
     <Router>
@@ -41,6 +49,7 @@ function App() {
             <Route path="/product/:slug" element={<ProductDetail />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/order-confirmation/:orderNumber" element={<OrderConfirmation />} />
+            <Route path="/track-order" element={<TrackOrder />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -48,6 +57,7 @@ function App() {
             <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
             <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
             <Route path="/admin/categories" element={<AdminRoute><AdminCategories /></AdminRoute>} />
+            <Route path="/admin/settings" element={<ProtectedRoute><AdminSettings /></ProtectedRoute>} />
           </Routes>
         </main>
         <Footer />
