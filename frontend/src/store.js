@@ -12,6 +12,10 @@ export const getFingerprint = async () => {
   return result.visitorId;
 };
 
+
+
+
+
 export const useStore = create(
   persist(
     (set, get) => ({
@@ -204,20 +208,90 @@ export const useStore = create(
           .toFixed(2);
       },
 
-      // Cart count
-      cartCount: () => {
-        return get().cart.reduce((count, item) => count + item.quantity, 0);
-      },
-    }),
-    {
-      name: 'femme-store',
-      partialize: (state) => ({
-        cart: state.cart,
-        userInfo: state.userInfo,
-        isAdmin: state.isAdmin,
-        adminToken: state.adminToken,
-        adminUser: state.adminUser,
-      }),
+    // Cart count
+    cartCount: () => {
+      return get().cart.reduce((count, item) => count + item.quantity, 0);
+    },
+
+  // Request password change (sends email)
+requestPasswordChange: async (currentPassword) => {
+  const adminUser = get().adminUser;
+  
+  console.log('='.repeat(50));
+  console.log('REQUEST PASSWORD CHANGE');
+  console.log('adminUser:', adminUser);
+  console.log('currentPassword:', currentPassword ? '***' : 'MISSING');
+  
+  if (!adminUser) {
+    console.log(' Not authenticated - no adminUser');
+    return { success: false, error: 'Not authenticated' };
+  }
+  
+  const requestData = {
+    username: adminUser.username,
+    current_password: currentPassword
+  };
+  
+  console.log('Request data:', requestData);
+  
+  try {
+    console.log('Sending POST to /admin/request-password-change/');
+    const response = await api.post('/admin/request-password-change/', requestData);
+    
+    console.log(' Response:', response.data);
+    
+    if (response.data.success) {
+      return { 
+        success: true, 
+        message: response.data.message,
+        email: response.data.email
+      };
     }
-  )
-);
+    
+    return { success: false, error: 'Request failed' };
+  } catch (error) {
+    console.error(' Password change request error:', error);
+    console.error('Error response:', error.response?.data);
+    return { 
+      success: false, 
+      error: error.response?.data?.error || 'Request failed' 
+    };
+  }
+},
+    // Verify code and change password
+    verifyAndChangePassword: async (currentPassword, newPassword, verificationCode) => {
+      const adminUser = get().adminUser;
+
+      if (!adminUser) {
+        return { success: false, error: "Not authenticated" };
+      }
+
+      try {
+        const response = await api.post('/admin/verify-change-password/', {
+          username: adminUser.username,
+          current_password: currentPassword,
+          new_password: newPassword,
+          verification_code: verificationCode
+        });
+
+        if (response.data.success) {
+          return { success: true, message: response.data.message };
+        }
+        return { success: false, error: "Verification failed" };
+      } catch (error) {
+        console.error('Verification error:', error);
+        return { success: false, error: error.response?.data?.error || error.response?.data?.errors || 'Verification failed' };
+      }
+    },
+  }),
+  {
+    name: 'femme-store',
+    partialize: (state) => ({
+      cart: state.cart,
+      userInfo: state.userInfo,
+      isAdmin: state.isAdmin,
+      adminToken: state.adminToken,
+      adminUser: state.adminUser,
+    }),
+  }
+));

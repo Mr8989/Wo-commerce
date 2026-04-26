@@ -12,6 +12,10 @@ from rest_framework.response import Response
 from django.conf import settings
 from .admin_utils import update_env_file
 from django.utils import timezone
+from rest_framework import status
+from django.core.mail import send_mail
+import secrets
+from datetime import timedelta
 from .serializers import (
     CategorySerializer, ProductSerializer, OrderSerializer,
     AnonymousUserSerializer, CartItemSerializer
@@ -337,18 +341,18 @@ class OrderViewSet(viewsets.ModelViewSet):
         return Response(stats)
     
 
+# Simple in-memory storage for verification codes
+# In production, use Redis or database
+password_change_codes = {}
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def admin_login(request):
     """Admin login endpoint"""
-    print("=" * 50)
-    print("LOGIN ATTEMPT")
-    print(f"Request data: {request.data}")
-    
     serializer = AdminLoginSerializer(data=request.data)
     
     if not serializer.is_valid():
-        print(f" Serializer invalid: {serializer.errors}")
         return Response(
             {'error': 'Invalid input'},
             status=status.HTTP_400_BAD_REQUEST
@@ -357,22 +361,14 @@ def admin_login(request):
     username = serializer.validated_data['username']
     password = serializer.validated_data['password']
     
-    print(f"Username: {username}")
-    print(f"Password length: {len(password)}")
-    
     try:
         admin = AdminUser.objects.get(username=username, is_active=True)
-        print(f" Found admin: {admin.username}")
         
-        password_valid = admin.check_password(password)
-        print(f"Password valid: {password_valid}")
-        
-        if password_valid:
+        if admin.check_password(password):
             # Update last login
             admin.last_login = timezone.now()
             admin.save()
             
-            print("Login successful")
             return Response({
                 'success': True,
                 'message': 'Login successful',
@@ -380,64 +376,15 @@ def admin_login(request):
                 'token': str(admin.id)
             })
         else:
-            print("Password incorrect")
             return Response(
                 {'error': 'Invalid credentials'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
     
     except AdminUser.DoesNotExist:
-        print(f" Admin user '{username}' not found")
         return Response(
             {'error': 'Invalid credentials'},
             status=status.HTTP_401_UNAUTHORIZED
-        )
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def admin_change_password(request):
-    """Change admin password"""
-    serializer = AdminChangePasswordSerializer(data=request.data)
-    
-    if not serializer.is_valid():
-        return Response(
-            {'errors': serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    username = request.data.get('username')
-    current_password = serializer.validated_data['current_password']
-    new_password = serializer.validated_data['new_password']
-    
-    try:
-        admin = AdminUser.objects.get(username=username, is_active=True)
-        
-        if not admin.check_password(current_password):
-            return Response(
-                {'error': 'Current password is incorrect'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        if current_password == new_password:
-            return Response(
-                {'error': 'New password must be different from current password'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Set new password
-        admin.set_password(new_password)
-        admin.save()
-        
-        return Response({
-            'success': True,
-            'message': 'Password changed successfully'
-        })
-    
-    except AdminUser.DoesNotExist:
-        return Response(
-            {'error': 'Admin user not found'},
-            status=status.HTTP_404_NOT_FOUND
         )
 
 
@@ -463,4 +410,247 @@ def admin_verify(request):
         return Response(
             {'error': 'Invalid token'},
             status=status.HTTP_401_UNAUTHORIZED
+        )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def admin_request_password_change(request):
+    """Request password change - sends verification code to email"""
+
+    #DEBUG print receive data
+    print("=" * 50)
+    print("request data received")
+    print(f"request.data: {request.data}")
+    print(f"request.POST: {request.POST}")
+    print(f"Content-Type: {request.content_type}")
+    print("=" * 50)
+
+    username = request.data.get('username')
+    current_password = request.data.get('current_password')
+
+    print(f"Extracted username: {username}")
+    print(f"Extracted password: {current_password}")
+    
+    try:
+        admin = AdminUser.objects.get(username=username, is_active=True)
+        
+        if not admin.check_password(current_password):
+            return Response(
+                {'error': 'Current password is incorrect'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not admin.email:
+            return Response(
+                {'error': 'No email address on file. Please contact system administrator.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Generate 6-digit verification code
+        verification_code = str(secrets.randbelow(999999)).zfill(6)
+        
+        # Store code with expiry (10 minutes)
+        password_change_codes[str(admin.id)] = {
+            'code': verification_code,
+            'expires': timezone.now() + timedelta(minutes=10),
+            'used': False
+        }
+        
+        # Send email
+        subject = 'CroppedByAyerkie Admin - Password Change Verification'
+        
+        html_message = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #2C1810 0%, #8B4513 100%); padding: 30px; text-align: center;">
+                <h1 style="color: #D4AF37; margin: 0;">CroppedByAyerkie Admin</h1>
+                <p style="color: white; margin: 10px 0 0;">Password Change Request</p>
+            </div>
+            
+            <div style="padding: 30px; background-color: #FFF8F0;">
+                <h2 style="color: #2C1810;">Password Change Verification</h2>
+                <p>Hello {admin.username},</p>
+                <p>You have requested to change your admin password. Please use the verification code below to complete the process:</p>
+                
+                <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                    <p style="font-size: 14px; color: #666; margin: 0 0 10px;">Your Verification Code:</p>
+                    <h1 style="color: #D4AF37; font-size: 36px; letter-spacing: 5px; margin: 0;">{verification_code}</h1>
+                </div>
+                
+                <p style="color: #C84630; font-weight: bold;">⏰ This code will expire in 10 minutes.</p>
+                
+                <p>If you did not request this password change, please ignore this email and contact support immediately.</p>
+                
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #E0E0E0;">
+                    <p style="font-size: 12px; color: #666;">
+                        For security reasons, never share this code with anyone.
+                    </p>
+                </div>
+            </div>
+            
+            <div style="background-color: #2C1810; padding: 20px; text-align: center; color: white; font-size: 12px;">
+                <p style="margin: 0;">© 2026 CroppedByAyerkie. All rights reserved.</p>
+                <p style="margin: 5px 0 0;">UHAS Campus, Ho, Volta Region, Ghana</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        plain_message = f"""
+        CroppedByAyerkie Admin - Password Change Verification
+        
+        Hello {admin.username},
+        
+        You have requested to change your admin password.
+        
+        Your Verification Code: {verification_code}
+        
+        This code will expire in 10 minutes.
+        
+        If you did not request this password change, please ignore this email.
+        
+        © 2026 CroppedByAyerkie. All rights reserved.
+        """
+        
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[admin.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        
+        print(f" Verification code sent to {admin.email}: {verification_code}")
+        
+        return Response({
+            'success': True,
+            'message': f'Verification code sent to {admin.email}',
+            'email': admin.email
+        })
+        
+    except AdminUser.DoesNotExist:
+        return Response(
+            {'error': 'Admin user not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        print(f" Email error: {e}")
+        return Response(
+            {'error': 'Failed to send verification email. Please try again.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def admin_verify_and_change_password(request):
+    """Verify code and change password"""
+    serializer = AdminChangePasswordSerializer(data=request.data)
+    
+    if not serializer.is_valid():
+        return Response(
+            {'errors': serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    username = request.data.get('username')
+    verification_code = request.data.get('verification_code')
+    current_password = serializer.validated_data['current_password']
+    new_password = serializer.validated_data['new_password']
+    
+    try:
+        admin = AdminUser.objects.get(username=username, is_active=True)
+        
+        # Verify current password
+        if not admin.check_password(current_password):
+            return Response(
+                {'error': 'Current password is incorrect'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check verification code
+        stored_data = password_change_codes.get(str(admin.id))
+        
+        if not stored_data:
+            return Response(
+                {'error': 'No verification code found. Please request a new one.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if stored_data['used']:
+            return Response(
+                {'error': 'Verification code already used. Please request a new one.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if timezone.now() > stored_data['expires']:
+            return Response(
+                {'error': 'Verification code expired. Please request a new one.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if stored_data['code'] != verification_code:
+            return Response(
+                {'error': 'Invalid verification code'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # All checks passed - change password
+        if current_password == new_password:
+            return Response(
+                {'error': 'New password must be different from current password'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        admin.set_password(new_password)
+        admin.save()
+        
+        # Mark code as used
+        password_change_codes[str(admin.id)]['used'] = True
+        
+        # Send confirmation email
+        try:
+            send_mail(
+                subject='CroppedByAyerkie Admin - Password Changed Successfully',
+                message=f'Hello {admin.username},\n\nYour admin password has been changed successfully.\n\nIf you did not make this change, please contact support immediately.\n\n© 2026 CroppedByAyerkie',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[admin.email],
+                html_message=f"""
+                <html>
+                <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background: linear-gradient(135deg, #2C1810 0%, #8B4513 100%); padding: 30px; text-align: center;">
+                        <h1 style="color: #D4AF37; margin: 0;">CroppedByAyerkie Admin</h1>
+                        <p style="color: white; margin: 10px 0 0;">Password Changed Successfully</p>
+                    </div>
+                    <div style="padding: 30px; background-color: #FFF8F0;">
+                        <h2 style="color: #2C1810;">Password Changed</h2>
+                        <p>Hello {admin.username},</p>
+                        <p>Your admin password has been changed successfully.</p>
+                        <p style="color: #C84630; font-weight: bold;">If you did not make this change, please contact support immediately.</p>
+                    </div>
+                    <div style="background-color: #2C1810; padding: 20px; text-align: center; color: white; font-size: 12px;">
+                        <p style="margin: 0;">© 2026 CroppedByAyerkie. All rights reserved.</p>
+                    </div>
+                </body>
+                </html>
+                """,
+                fail_silently=True,
+            )
+            print(f" Confirmation email sent to {admin.email}")
+        except Exception as e:
+            print(f"Confirmation email failed: {e}")
+        
+        print(f" Password changed for {admin.username}")
+        
+        return Response({
+            'success': True,
+            'message': 'Password changed successfully'
+        })
+        
+    except AdminUser.DoesNotExist:
+        return Response(
+            {'error': 'Admin user not found'},
+            status=status.HTTP_404_NOT_FOUND
         )
