@@ -5,7 +5,7 @@ import { paginationFor } from '../lib/pagination.js';
 import { serializeProduct } from '../lib/serializers.js';
 import { toId } from '../lib/ids.js';
 import { validate, str, decimalString, integer, boolean, jsonArray, z } from '../lib/parse.js';
-import { productImageUpload, storedPath, discardUpload } from '../lib/upload.js';
+import { productImageUpload, processProductImage, storedPath, discardUpload } from '../lib/upload.js';
 import { requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
@@ -115,6 +115,7 @@ router.post(
   '/',
   requireAdmin,
   productImageUpload.single('image'),
+  processProductImage,
   asyncHandler(async (req, res) => {
     try {
       const data = validate(productSchema, req.body);
@@ -160,8 +161,8 @@ const update = (partial) =>
     }
   });
 
-router.put('/:pk', requireAdmin, productImageUpload.single('image'), update(false));
-router.patch('/:pk', requireAdmin, productImageUpload.single('image'), update(true));
+router.put('/:pk', requireAdmin, productImageUpload.single('image'), processProductImage, update(false));
+router.patch('/:pk', requireAdmin, productImageUpload.single('image'), processProductImage, update(true));
 
 router.delete(
   '/:pk',

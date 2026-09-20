@@ -1,10 +1,10 @@
-import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import multer from 'multer';
+import sharp from 'sharp';
 import config from '../config.js';
-import { ApiError } from './http.js';
+import { ApiError, asyncHandler } from './http.js';
 
 export const PRODUCT_UPLOAD_DIR = 'products'; // matches Django's upload_to='products/'
 
@@ -46,27 +46,71 @@ async function availableName(dir, filename) {
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif']);
 
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    const dir = path.join(config.mediaRoot, PRODUCT_UPLOAD_DIR);
-    fs.mkdir(dir, { recursive: true }, (err) => cb(err, dir));
-  },
-  filename(req, file, cb) {
-    const dir = path.join(config.mediaRoot, PRODUCT_UPLOAD_DIR);
-    availableName(dir, validFilename(file.originalname)).then((name) => cb(null, name), cb);
-  },
-});
+const INVALID_IMAGE = () =>
+  new ApiError(400, { image: ['Upload a valid image. The file you uploaded was either not an image or a corrupted image.'] });
 
+// Uploads are held in memory (capped at maxUploadBytes) so they can be
+// resized before anything is written to disk.
 export const productImageUpload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: config.maxUploadBytes, files: 1 },
   fileFilter(req, file, cb) {
     if (!ALLOWED_MIME.has(file.mimetype)) {
-      cb(new ApiError(400, { image: ['Upload a valid image. The file you uploaded was either not an image or a corrupted image.'] }));
+      cb(INVALID_IMAGE());
       return;
     }
     cb(null, true);
   },
+});
+
+// Phone photos arrive at 4000px / several MB; the product grid needs ~800px.
+// Everything is stored as WebP within this box, which is ~80-90% smaller and
+// is what the storefront serves to every visitor.
+const MAX_DIMENSION = Number(process.env.IMAGE_MAX_DIMENSION || 1200);
+const WEBP_QUALITY = Number(process.env.IMAGE_WEBP_QUALITY || 82);
+
+/**
+ * Runs after multer: decodes the upload (rejecting anything that isn't really
+ * an image, whatever its declared type), resizes it and writes it to the
+ * media directory. Leaves `req.file.filename` / `req.file.path` set the way
+ * disk storage would have, so the route code doesn't care which path ran.
+ */
+export const processProductImage = asyncHandler(async (req, res, next) => {
+  const file = req.file;
+  if (!file) {
+    next();
+    return;
+  }
+
+  let output;
+  try {
+    // Animated GIFs keep their frames; `rotate()` applies the EXIF orientation
+    // phones record instead of storing the pixels sideways.
+    const animated = file.mimetype === 'image/gif';
+    output = await sharp(file.buffer, { animated, failOn: 'error' })
+      .rotate()
+      .resize({ width: MAX_DIMENSION, height: MAX_DIMENSION, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: WEBP_QUALITY, effort: 4 })
+      .toBuffer();
+  } catch {
+    throw INVALID_IMAGE();
+  }
+
+  const dir = path.join(config.mediaRoot, PRODUCT_UPLOAD_DIR);
+  await fsp.mkdir(dir, { recursive: true });
+
+  const stem = path.basename(validFilename(file.originalname), path.extname(file.originalname));
+  const filename = await availableName(dir, `${stem}.webp`);
+  const destination = path.join(dir, filename);
+  await fsp.writeFile(destination, output);
+
+  file.filename = filename;
+  file.path = destination;
+  file.size = output.length;
+  file.mimetype = 'image/webp';
+  delete file.buffer;
+
+  next();
 });
 
 /** The value stored in the database column, e.g. "products/dress.png". */

@@ -31,6 +31,13 @@ ones over so the paths stored in the database still resolve:
 cp -R ../backend/media ./media
 ```
 
+New uploads are decoded, auto-rotated, shrunk to fit within
+`IMAGE_MAX_DIMENSION` (1200px) and stored as WebP at `IMAGE_WEBP_QUALITY` (82),
+so a multi-megabyte phone photo ends up around 100-200 KB. Images copied over
+from Django are served as they are. The database only ever holds the file
+path, so uploads don't add load to Postgres; keep an eye on disk space and
+back up `media/` alongside the database.
+
 ## Layout
 
 | Path | What's in it |
