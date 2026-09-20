@@ -13,12 +13,8 @@ function OrderConfirmation() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await api.get(`/orders/?search=${orderNumber}`);
-        const orders = response.data.results || response.data;
-        
-        if (orders.length > 0) {
-          setOrder(orders[0]);
-        }
+        const response = await api.get(`/orders/track/${encodeURIComponent(orderNumber)}/`);
+        setOrder(response.data);
       } catch (error) {
         console.error('Failed to fetch order:', error);
       } finally {

@@ -84,12 +84,20 @@ export const useStore = create(
 
       // Admin logout
       logout: () => {
+        const token = localStorage.getItem('adminToken');
         localStorage.removeItem('adminToken');
-        set({ 
+        set({
           isAdmin: false,
           adminToken: null,
           adminUser: null
         });
+
+        if (token) {
+          // Revoke the token server-side; ignore failures since we've already logged out locally
+          api.post('/admin/logout/', {}, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => {});
+        }
       },
 
       // Check if admin is authenticated

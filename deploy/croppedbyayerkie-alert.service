@@ -1,0 +1,12 @@
+# Fired automatically by croppedbyayerkie.service's OnFailure= directive
+# when the Django/gunicorn app crashes or fails to start.
+#
+# Install: sudo cp deploy/croppedbyayerkie-alert.service /etc/systemd/system/
+#          sudo systemctl daemon-reload
+
+[Unit]
+Description=Send crash alert email for croppedbyayerkie
+
+[Service]
+Type=oneshot
+ExecStart=/var/www/croppedbyayerkie/deploy/alert-on-failure.sh croppedbyayerkie

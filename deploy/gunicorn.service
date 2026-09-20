@@ -1,0 +1,28 @@
+# systemd unit for the Django backend
+#
+# Install: sudo cp deploy/gunicorn.service /etc/systemd/system/croppedbyayerkie.service
+#          sudo systemctl daemon-reload
+#          sudo systemctl enable --now croppedbyayerkie
+#
+# settings.py loads backend/.env itself via python-dotenv, so no
+# EnvironmentFile is needed here.
+
+[Unit]
+Description=Gunicorn daemon for CroppedByAyerkie Django app
+After=network.target postgresql.service
+OnFailure=croppedbyayerkie-alert.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/croppedbyayerkie/backend
+ExecStart=/var/www/croppedbyayerkie/backend/venv/bin/gunicorn \
+    --workers 3 \
+    --bind 127.0.0.1:8000 \
+    --access-logfile - \
+    --error-logfile - \
+    womens_wear.wsgi:application
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

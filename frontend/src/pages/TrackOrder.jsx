@@ -16,17 +16,15 @@ function TrackOrder() {
     setOrder(null);
 
     try {
-      const response = await api.get(`/orders/?search=${orderNumber}`);
-      const orders = response.data.results || response.data;
-      
-      if (orders.length > 0) {
-        setOrder(orders[0]);
-      } else {
-        setError('Order not found. Please check your order number and try again.');
-      }
+      const response = await api.get(`/orders/track/${encodeURIComponent(orderNumber.trim())}/`);
+      setOrder(response.data);
     } catch (err) {
-      console.error('Error:', err);
-      setError('Failed to fetch order. Please try again.');
+      if (err.response?.status === 404) {
+        setError('Order not found. Please check your order number and try again.');
+      } else {
+        console.error('Error:', err);
+        setError('Failed to fetch order. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

@@ -23,7 +23,7 @@ import './App.css';
 
 function App() {
   const setUserFingerprint = useStore(state => state.setUserFingerprint);
-  const {verifyAdmin} = useStore();
+  const {verifyAdmin, logout} = useStore();
 
   useEffect(() => {
     // Initialize user fingerprint
@@ -35,6 +35,13 @@ function App() {
   useEffect(() => {
     verifyAdmin()
   }, [verifyAdmin])
+
+  // api.js fires this when an admin request comes back 401 (expired token).
+  useEffect(() => {
+    const onExpired = () => logout();
+    window.addEventListener('admin-session-expired', onExpired);
+    return () => window.removeEventListener('admin-session-expired', onExpired);
+  }, [logout])
 
   return (
     <Router>

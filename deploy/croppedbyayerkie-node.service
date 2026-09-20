@@ -1,0 +1,34 @@
+# systemd unit for the Node/Express backend (replaces gunicorn.service)
+#
+# Install: sudo cp deploy/croppedbyayerkie-node.service /etc/systemd/system/croppedbyayerkie.service
+#          sudo systemctl daemon-reload
+#          sudo systemctl enable --now croppedbyayerkie
+#
+# src/config.js loads backend-node/.env itself via dotenv, so no
+# EnvironmentFile is needed here.
+
+[Unit]
+Description=Node API for CroppedByAyerkie
+After=network.target postgresql.service
+OnFailure=croppedbyayerkie-alert.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/croppedbyayerkie/backend-node
+ExecStart=/usr/bin/node src/server.js
+Environment=NODE_ENV=production
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# The process only ever needs to write uploaded images.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/www/croppedbyayerkie/backend-node/media
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,160 @@
+// Schema is mapped onto the tables the Django backend created, so the same
+// Postgres database can be used as-is — no data migration needed.
+//
+// relationMode = "prisma" makes Prisma apply the referential actions
+// (cascade / set null) in the client instead of relying on database-level
+// ON DELETE clauses. Django did exactly the same thing in Python, so the
+// foreign keys already in the database have no ON DELETE clause to rely on.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model Category {
+  id          BigInt   @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  slug        String   @unique @db.VarChar(50)
+  description String   @default("")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  products Product[]
+
+  @@map("store_category")
+}
+
+model Product {
+  id             BigInt   @id @default(autoincrement())
+  name           String   @db.VarChar(200)
+  slug           String   @unique @db.VarChar(50)
+  description    String
+  price          Decimal  @db.Decimal(10, 2)
+  categoryId     BigInt   @map("category_id")
+  image          String?  @db.VarChar(100)
+  imageUrl       String?  @map("image_url") @db.VarChar(200)
+  stock          Int      @default(0)
+  availableSizes Json     @default("[]") @map("available_sizes")
+  isFeatured     Boolean  @default(false) @map("is_featured")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+
+  @@index([categoryId])
+  @@index([isFeatured, isActive])
+  @@map("store_product")
+}
+
+model AnonymousUser {
+  id          BigInt   @id @default(autoincrement())
+  fingerprint String   @unique @db.VarChar(255)
+  sessionId   String   @default("") @map("session_id") @db.VarChar(255)
+  email       String?  @db.VarChar(254)
+  firstName   String   @default("") @map("first_name") @db.VarChar(100)
+  lastName    String   @default("") @map("last_name") @db.VarChar(100)
+  phone       String   @default("") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastActive  DateTime @updatedAt @map("last_active") @db.Timestamptz(6)
+
+  orders    Order[]
+  cartItems CartItem[]
+
+  @@map("store_anonymoususer")
+}
+
+model Order {
+  id              BigInt   @id @default(autoincrement())
+  orderNumber     String   @unique @map("order_number") @db.VarChar(50)
+  anonymousUserId BigInt?  @map("anonymous_user_id")
+
+  email     String @db.VarChar(254)
+  firstName String @map("first_name") @db.VarChar(100)
+  lastName  String @map("last_name") @db.VarChar(100)
+  phone     String @db.VarChar(20)
+
+  deliveryAddress    String @map("delivery_address") @db.VarChar(255)
+  deliveryCity       String @map("delivery_city") @db.VarChar(100)
+  deliveryState      String @map("delivery_state") @db.VarChar(100)
+  deliveryPostalCode String @map("delivery_postal_code") @db.VarChar(20)
+  deliveryCountry    String @map("delivery_country") @db.VarChar(100)
+
+  totalAmount   Decimal  @map("total_amount") @db.Decimal(10, 2)
+  status        String   @default("pending") @db.VarChar(20)
+  paymentMethod String   @default("bank_transfer") @map("payment_method") @db.VarChar(20)
+  notes         String   @default("")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  anonymousUser AnonymousUser? @relation(fields: [anonymousUserId], references: [id], onDelete: SetNull)
+  items         OrderItem[]
+
+  @@index([anonymousUserId])
+  @@index([status])
+  @@map("store_order")
+}
+
+model OrderItem {
+  id        BigInt  @id @default(autoincrement())
+  orderId   BigInt  @map("order_id")
+  productId BigInt  @map("product_id")
+  quantity  Int     @default(1)
+  size      String  @default("") @db.VarChar(10)
+  price     Decimal @db.Decimal(10, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("store_orderitem")
+}
+
+model CartItem {
+  id              BigInt   @id @default(autoincrement())
+  anonymousUserId BigInt   @map("anonymous_user_id")
+  productId       BigInt   @map("product_id")
+  quantity        Int      @default(1)
+  size            String   @default("") @db.VarChar(10)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  anonymousUser AnonymousUser @relation(fields: [anonymousUserId], references: [id], onDelete: Cascade)
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([anonymousUserId, productId, size])
+  @@index([productId])
+  @@map("store_cartitem")
+}
+
+model AdminUser {
+  id       String  @id @default(uuid()) @db.Uuid
+  username String  @unique @db.VarChar(150)
+  /// Django-compatible pbkdf2_sha256 hash
+  password String  @db.VarChar(128)
+  email    String? @db.VarChar(254)
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  lastLogin DateTime? @map("last_login") @db.Timestamptz(6)
+
+  authToken      String?   @unique @map("auth_token") @db.VarChar(64)
+  tokenCreatedAt DateTime? @map("token_created_at") @db.Timestamptz(6)
+
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until") @db.Timestamptz(6)
+
+  verificationCode        String?   @map("verification_code") @db.VarChar(6)
+  verificationCodeExpires DateTime? @map("verification_code_expires") @db.Timestamptz(6)
+  verificationCodeUsed    Boolean   @default(false) @map("verification_code_used")
+
+  @@map("admin_users")
+}
