@@ -52,51 +52,30 @@
   color: var(--color-text-light);
 }
 
-.input-group {
-  margin-bottom: var(--spacing-lg);
-}
-
-.input-group label {
-  display: block;
-  margin-bottom: var(--spacing-xs);
-  font-weight: 500;
-  color: var(--color-text);
-}
-
-.input-wrapper {
+/* App.css already styles .input-group inputs; these rules only add the
+   icon layout, so they are scoped under .login-form to win on specificity. */
+.login-form .input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
 
 /* The leading icon (user / lock) sits inside the field on the left. */
-.input-wrapper > svg:first-child {
+.login-form .input-wrapper > svg:first-child {
   position: absolute;
-  left: var(--spacing-md);
+  left: 1rem;
   color: var(--color-text-light);
   pointer-events: none;
 }
 
-.input-wrapper input {
-  width: 100%;
-  padding: var(--spacing-md) var(--spacing-lg);
+.login-form .input-wrapper input {
   padding-left: 3rem;
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 1rem;
-  background: var(--color-white);
-  transition: all 0.3s ease;
 }
 
 /* Leave room for the show/hide toggle on the password field. */
-.input-wrapper input[id='password'] {
+.login-form .input-wrapper input[type='password'],
+.login-form .input-wrapper input#password {
   padding-right: 3.5rem;
-}
-
-.input-wrapper input:focus {
-  outline: none;
-  border-color: var(--color-secondary);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
 }
 
 .toggle-password-btn {
