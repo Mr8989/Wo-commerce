@@ -37,7 +37,8 @@ services:
         sync: false
       - key: AFRICAS_TALKING_API_KEY
         sync: false
-      - key: AFRICAS_TALKING_SENDER_ID
-        sync: false
+      # Optional, so not listed here: the blueprint form requires a value for
+      # every entry. Add AFRICAS_TALKING_SENDER_ID under the service's
+      # Environment tab once Africa's Talking has approved a branded sender.
       - key: SUPPORT_PHONE_NUMBER
         sync: false
