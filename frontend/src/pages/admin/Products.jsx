@@ -149,10 +149,25 @@ function AdminProducts() {
       setShowForm(false);
     } catch (error) {
       console.error('Failed to save product:', error);
-      alert('Failed to save product. Check console for details.');
+      alert(`Failed to save product.\n\n${describeApiError(error)}`);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Turn an axios error into something readable: the API's field errors
+  // ({"image": ["..."]}), its detail message, or the HTTP status.
+  const describeApiError = (error) => {
+    const data = error.response?.data;
+    if (data && typeof data === 'object') {
+      const lines = Object.entries(data).map(([field, messages]) =>
+        `${field}: ${[].concat(messages).join(' ')}`
+      );
+      if (lines.length) return lines.join('\n');
+    }
+    if (typeof data === 'string' && data.trim()) return data.slice(0, 300);
+    if (error.response) return `Server responded with ${error.response.status} ${error.response.statusText || ''}`.trim();
+    return error.message || 'Network error';
   };
 
   const handleEdit = (product) => {
