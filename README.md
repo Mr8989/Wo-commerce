@@ -12,5 +12,7 @@ products, categories and orders.
 
 Local setup: `./setup.sh`
 
-Deployment: [DEPLOYMENT-NODE.md](DEPLOYMENT-NODE.md). The Django instructions in
-[DEPLOYMENT.md](DEPLOYMENT.md) apply only to `backend/`.
+Deployment: [DEPLOYMENT-FREE.md](DEPLOYMENT-FREE.md) for the free hosted setup
+(Neon + Render + Vercel + Cloudinary), or [DEPLOYMENT-NODE.md](DEPLOYMENT-NODE.md)
+for a Hostinger VPS. The Django instructions in [DEPLOYMENT.md](DEPLOYMENT.md)
+apply only to the old `backend/`.

@@ -38,6 +38,10 @@ from Django are served as they are. The database only ever holds the file
 path, so uploads don't add load to Postgres; keep an eye on disk space and
 back up `media/` alongside the database.
 
+Set `CLOUDINARY_URL` and uploads go to Cloudinary instead, with the full URL
+stored in the same column. Use this on hosts without a persistent disk
+(see `DEPLOYMENT-FREE.md`).
+
 ## Layout
 
 | Path | What's in it |

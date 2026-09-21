@@ -7,9 +7,13 @@ const decimal = (value) => (value === null || value === undefined ? null : Numbe
 /** DRF renders DateTimeField as ISO-8601 with a trailing Z. */
 const datetime = (value) => (value ? new Date(value).toISOString() : null);
 
-/** Absolute URL for a stored media path, e.g. "products/dress.png". */
+/**
+ * Absolute URL for a stored image: a local media path like "products/dress.png"
+ * is served from this host; a Cloudinary upload is already a full URL.
+ */
 export function mediaUrl(req, relativePath) {
   if (!relativePath) return null;
+  if (/^https?:\/\//i.test(relativePath)) return relativePath;
   const base = `${req.protocol}://${req.get('host')}`;
   return `${base}${config.mediaUrl}${String(relativePath).replace(/^\/+/, '')}`;
 }

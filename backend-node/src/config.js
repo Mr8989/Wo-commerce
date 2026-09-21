@@ -45,6 +45,13 @@ export const config = {
   mediaUrl: '/media/',
   maxUploadBytes: Number(process.env.MAX_UPLOAD_BYTES || 10 * 1024 * 1024),
 
+  // When CLOUDINARY_URL is set, uploads go to Cloudinary instead of the local
+  // media directory. Needed on hosts whose disk is wiped on every restart.
+  cloudinary: {
+    enabled: Boolean(process.env.CLOUDINARY_URL),
+    folder: process.env.CLOUDINARY_FOLDER || 'croppedbyayerkie/products',
+  },
+
   pageSize: Number(process.env.PAGE_SIZE || 12),
 
   cors: {

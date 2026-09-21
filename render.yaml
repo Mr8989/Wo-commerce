@@ -1,0 +1,43 @@
+# Render Blueprint: creates the Node API as a free web service.
+# Dashboard -> New -> Blueprint -> pick this repo. See DEPLOYMENT-FREE.md.
+services:
+  - type: web
+    name: croppedbyayerkie-api
+    runtime: node
+    plan: free
+    rootDir: backend-node
+    # DATABASE_URL is available at build time, so migrations run here; the
+    # free plan has no separate pre-deploy step.
+    buildCommand: npm ci && npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: HOST
+        value: 0.0.0.0
+      - key: DEBUG
+        value: "False"
+      # Paste these in the Render dashboard; sync: false keeps them out of git.
+      - key: DATABASE_URL
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: SITE_URL
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: AFRICAS_TALKING_USERNAME
+        sync: false
+      - key: AFRICAS_TALKING_API_KEY
+        sync: false
+      - key: AFRICAS_TALKING_SENDER_ID
+        sync: false
+      - key: SUPPORT_PHONE_NUMBER
+        sync: false

@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import multer from 'multer';
 import sharp from 'sharp';
+import { v2 as cloudinary } from 'cloudinary';
 import config from '../config.js';
 import { ApiError, asyncHandler } from './http.js';
 
@@ -69,6 +70,21 @@ export const productImageUpload = multer({
 const MAX_DIMENSION = Number(process.env.IMAGE_MAX_DIMENSION || 1200);
 const WEBP_QUALITY = Number(process.env.IMAGE_WEBP_QUALITY || 82);
 
+// The SDK reads CLOUDINARY_URL (cloudinary://key:secret@cloud) from the
+// environment, which config.js has already populated from .env.
+if (config.cloudinary.enabled) cloudinary.config({ secure: true });
+
+function uploadToCloudinary(buffer, publicId) {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader
+      .upload_stream(
+        { folder: config.cloudinary.folder, public_id: publicId, resource_type: 'image', overwrite: false },
+        (error, result) => (error ? reject(error) : resolve(result)),
+      )
+      .end(buffer);
+  });
+}
+
 /**
  * Runs after multer: decodes the upload (rejecting anything that isn't really
  * an image, whatever its declared type), resizes it and writes it to the
@@ -96,28 +112,45 @@ export const processProductImage = asyncHandler(async (req, res, next) => {
     throw INVALID_IMAGE();
   }
 
+  const stem = path.basename(validFilename(file.originalname), path.extname(file.originalname));
+  file.size = output.length;
+  file.mimetype = 'image/webp';
+  delete file.buffer;
+
+  if (config.cloudinary.enabled) {
+    const result = await uploadToCloudinary(output, `${stem}_${randomSuffix()}`);
+    file.filename = result.public_id;
+    file.path = result.secure_url;
+    file.cloudinaryId = result.public_id;
+    next();
+    return;
+  }
+
   const dir = path.join(config.mediaRoot, PRODUCT_UPLOAD_DIR);
   await fsp.mkdir(dir, { recursive: true });
 
-  const stem = path.basename(validFilename(file.originalname), path.extname(file.originalname));
   const filename = await availableName(dir, `${stem}.webp`);
   const destination = path.join(dir, filename);
   await fsp.writeFile(destination, output);
 
   file.filename = filename;
   file.path = destination;
-  file.size = output.length;
-  file.mimetype = 'image/webp';
-  delete file.buffer;
 
   next();
 });
 
-/** The value stored in the database column, e.g. "products/dress.png". */
-export const storedPath = (file) => `${PRODUCT_UPLOAD_DIR}/${file.filename}`;
+/**
+ * The value stored in the database column: "products/dress.webp" for a local
+ * file, or the full https URL for a Cloudinary upload.
+ */
+export const storedPath = (file) => (file.cloudinaryId ? file.path : `${PRODUCT_UPLOAD_DIR}/${file.filename}`);
 
 /** Remove a just-saved upload after a failed request, so it isn't orphaned. */
 export async function discardUpload(file) {
   if (!file) return;
+  if (file.cloudinaryId) {
+    await cloudinary.uploader.destroy(file.cloudinaryId).catch(() => {});
+    return;
+  }
   await fsp.rm(file.path, { force: true }).catch(() => {});
 }
