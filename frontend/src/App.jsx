@@ -1,36 +1,32 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useEffect } from 'react';
-import { useStore, getFingerprint } from './store';
+import { useEffect, lazy, Suspense } from 'react';
+import { useStore } from './store';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Cart from './components/Cart';
 import AdminRoute from './components/AdminRoute';
 import Home from './pages/Home';
-import About from './pages/About';
 import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
-import Checkout from './pages/Checkout';
-import OrderConfirmation from './pages/OrderConfirmation';
-import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/admin/Dashboard';
-import AdminProducts from './pages/admin/Products';
-import AdminOrders from './pages/admin/Orders';
-import AdminCategories from './pages/admin/Categories';
-import TrackOrder from './pages/TrackOrder';
-import AdminSettings from './pages/admin/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
-function App() {
-  const setUserFingerprint = useStore(state => state.setUserFingerprint);
-  const {verifyAdmin, logout} = useStore();
+// The storefront routes above are what every visitor needs on first paint.
+// Everything else — the whole admin dashboard in particular — loads only once
+// someone navigates there, which keeps the initial download small.
+const About = lazy(() => import('./pages/About'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
+const TrackOrder = lazy(() => import('./pages/TrackOrder'));
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
+const AdminProducts = lazy(() => import('./pages/admin/Products'));
+const AdminOrders = lazy(() => import('./pages/admin/Orders'));
+const AdminCategories = lazy(() => import('./pages/admin/Categories'));
+const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 
-  useEffect(() => {
-    // Initialize user fingerprint
-    getFingerprint().then(fp => {
-      setUserFingerprint(fp);
-    });
-  }, [setUserFingerprint]);
+function App() {
+  const {verifyAdmin, logout} = useStore();
 
   useEffect(() => {
     verifyAdmin()
@@ -49,6 +45,7 @@ function App() {
         <Navbar />
         <Cart />
         <main className="main-content">
+          <Suspense fallback={<div className="loading">Loading...</div>}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path='/about' element={<About/>}/>
@@ -66,6 +63,7 @@ function App() {
             <Route path="/admin/categories" element={<AdminRoute><AdminCategories /></AdminRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute><AdminSettings /></ProtectedRoute>} />
           </Routes>
+          </Suspense>
         </main>
         <Footer />
       </div>

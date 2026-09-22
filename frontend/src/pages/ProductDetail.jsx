@@ -43,7 +43,12 @@ function ProductDetail() {
     <div className="product-detail container fade-in">
       <div className="product-detail-grid">
         <div className="product-detail-image">
-          <img src={product.image_display || product.image_url || 'https://via.placeholder.com/600x800'} alt={product.name} />
+          <img
+            src={product.image_display || product.image_url || 'https://via.placeholder.com/600x800'}
+            alt={product.name}
+            fetchpriority="high"
+            decoding="async"
+          />
         </div>
         
         <div className="product-detail-info">

@@ -6,7 +6,9 @@ import './Shop.css';
 
 function Shop() {
   const { products, setProducts, categories, setCategories, selectedCategory, setSelectedCategory } = useStore();
-  const [loading, setLoading] = useState(true);
+  // Products live in the store, so coming back to Shop paints the previous
+  // results immediately and refreshes them in the background.
+  const [loading, setLoading] = useState(() => products.length === 0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,7 +65,12 @@ function Shop() {
           {filteredProducts.map(product => (
             <Link to={`/product/${product.slug}`} key={product.id} className="product-card">
               <div className="product-image">
-                <img src={product.image_display || product.image_url || 'https://via.placeholder.com/400x500'} alt={product.name} />
+                <img
+                  src={product.image_display || product.image_url || 'https://via.placeholder.com/400x500'}
+                  alt={product.name}
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
               <div className="product-info">
                 <h3 className="product-name">{product.name}</h3>

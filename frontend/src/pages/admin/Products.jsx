@@ -459,6 +459,8 @@ function AdminProducts() {
                   <img 
                     src={product.image_display || product.image_url || 'https://via.placeholder.com/300x400?text=No+Image'} 
                     alt={product.name}
+                    loading="lazy"
+                    decoding="async"
                   />
                   {product.is_featured && (
                     <span className="badge-featured">Featured</span>

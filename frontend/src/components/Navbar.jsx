@@ -7,8 +7,8 @@ import logo from '../images/logo.png'
 
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { toggleCart, cartItemCount, isAdmin, logout } = useStore();
-  const itemCount = cartItemCount ? cartItemCount() : 0;
+  const { toggleCart, cartCount, isAdmin, logout } = useStore();
+  const itemCount = cartCount();
 
   const navigate = useNavigate();
 

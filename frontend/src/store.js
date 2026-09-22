@@ -1,12 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import api from './api';
 
-// Initialize fingerprint
-const fpPromise = FingerprintJS.load();
+// The fingerprint agent is only needed when an order is placed, and it costs
+// both a chunk of JavaScript and real main-thread work to run. Load it the
+// first time it's asked for rather than on every page view.
+let fpPromise = null;
 
 export const getFingerprint = async () => {
+  if (!fpPromise) {
+    fpPromise = import('@fingerprintjs/fingerprintjs').then((m) => m.default.load());
+  }
   const fp = await fpPromise;
   const result = await fp.get();
   return result.visitorId;
@@ -23,6 +27,12 @@ export const useStore = create(
       userFingerprint: null,
       setUserFingerprint: (fp) => set({ userFingerprint: fp }),
       cart: [],
+
+      // Cart drawer visibility
+      isCartOpen: false,
+      toggleCart: () => set({ isCartOpen: !get().isCartOpen }),
+      openCart: () => set({ isCartOpen: true }),
+      closeCart: () => set({ isCartOpen: false }),
       
       // Products and Categories state
       products: [],

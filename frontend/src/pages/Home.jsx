@@ -5,20 +5,36 @@ import { useStore } from '../store';
 import api from '../api';
 import './Home.css';
 
+// Background slideshow images. Module scope so the array identity is stable
+// across renders and the effects below don't re-run on every paint.
+const slideshowImages = [
+  '/slide1.jpg',
+  '/slide2.jpg',
+  '/slide3.jpg',
+  '/slide4.jpg',
+  '/slide5.jpg',
+  '/slide6.jpg',
+  '/slide7.jpeg',
+];
+
+// Fetch the upcoming photo once the browser is idle, so it never competes
+// with the first slide or the product grid for bandwidth.
+const whenIdle = (fn) =>
+  typeof window.requestIdleCallback === 'function'
+    ? window.requestIdleCallback(fn, { timeout: 2000 })
+    : setTimeout(fn, 1200);
+
+const cancelIdle = (handle) =>
+  typeof window.cancelIdleCallback === 'function'
+    ? window.cancelIdleCallback(handle)
+    : clearTimeout(handle);
+
 function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [featuredProducts, setFeaturedProducts] = useState([]);
-
-  // Background slideshow images
-  const slideshowImages = [
-    '/slide1.jpg',
-    '/slide2.jpg',
-    '/slide3.jpg',
-    '/slide4.jpg',
-    '/slide5.jpg',
-    '/slide6.jpg',
-    '/slide7.jpeg',
-  ];
+  // Only slides that have been reached carry a background-image, so the
+  // browser downloads one photo for the first paint instead of all seven.
+  const [loadedSlides, setLoadedSlides] = useState(() => new Set([0]));
 
   // Fetch featured products
   useEffect(() => {
@@ -33,6 +49,15 @@ function Home() {
 
     fetchFeaturedProducts();
   }, []);
+
+  // Pull in the next photo ahead of the crossfade to it
+  useEffect(() => {
+    const next = (currentSlide + 1) % slideshowImages.length;
+    const handle = whenIdle(() => {
+      setLoadedSlides((prev) => (prev.has(next) ? prev : new Set(prev).add(next)));
+    });
+    return () => cancelIdle(handle);
+  }, [currentSlide]);
 
   // Auto-advance slideshow every 5 seconds
   useEffect(() => {
@@ -53,7 +78,7 @@ function Home() {
             <div
               key={index}
               className={`slide ${index === currentSlide ? 'active' : ''}`}
-              style={{ backgroundImage: `url(${image})` }}
+              style={loadedSlides.has(index) ? { backgroundImage: `url(${image})` } : undefined}
             />
           ))}
           <div className="slideshow-overlay" />
@@ -143,6 +168,8 @@ function Home() {
                   <img
                     src={product.image_display || product.image_url || 'https://via.placeholder.com/400x500?text=No+Image'}
                     alt={product.name}
+                    loading="lazy"
+                    decoding="async"
                   />
                   {product.is_featured && (
                     <span className="badge">Featured</span>

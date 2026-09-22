@@ -9,7 +9,7 @@ function Cart() {
     isCartOpen, 
     toggleCart, 
     removeFromCart, 
-    updateCartItemQuantity,
+    updateQuantity,
     cartTotal 
   } = useStore();
 
@@ -44,6 +44,8 @@ function Cart() {
                       <img 
                         src={item.product.image_display || item.product.image_url || 'https://via.placeholder.com/100'} 
                         alt={item.product.name}
+                        loading="lazy"
+                        decoding="async"
                       />
                     </div>
                     <div className="cart-item-details">
@@ -53,14 +55,14 @@ function Cart() {
                       
                       <div className="cart-item-quantity">
                         <button 
-                          onClick={() => updateCartItemQuantity(item.product.id, item.size, Math.max(1, item.quantity - 1))}
+                          onClick={() => updateQuantity(item.product.id, item.size, Math.max(1, item.quantity - 1))}
                           className="quantity-btn"
                         >
                           <Minus size={16} />
                         </button>
                         <span>{item.quantity}</span>
                         <button 
-                          onClick={() => updateCartItemQuantity(item.product.id, item.size, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.product.id, item.size, item.quantity + 1)}
                           className="quantity-btn"
                         >
                           <Plus size={16} />
@@ -80,7 +82,7 @@ function Cart() {
               <div className="cart-footer">
                 <div className="cart-total">
                   <span>Subtotal</span>
-                  <span className="cart-total-amount">₵{total.toFixed(2)}</span>
+                  <span className="cart-total-amount">₵{total}</span>
                 </div>
                 <Link 
                   to="/checkout" 
