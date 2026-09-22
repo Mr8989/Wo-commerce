@@ -30,7 +30,7 @@ function Navbar() {
       <div className="navbar-container container">
         <Link to="/" className="navbar-logo">
           {/* <span className="logo-text">Cropped By AYERKIE</span> */}
-          <img src={logo} alt="Cropped By AYERKIE" width={150} height={150} />
+          <img src={logo} alt="Cropped By AYERKIE" className="navbar-logo-img" />
         </Link>
 
         <button 

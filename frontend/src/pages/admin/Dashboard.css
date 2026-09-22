@@ -146,11 +146,24 @@
     width: 100%;
     justify-content: center;
   }
+  /* One horizontal, swipeable strip instead of a full-screen stack, so the
+     page content starts near the top on a phone. */
   .admin-nav {
-    flex-direction: column;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: var(--spacing-xs);
+    padding-bottom: var(--spacing-xs);
+    scrollbar-width: none;
   }
-  
+
+  .admin-nav::-webkit-scrollbar {
+    display: none;
+  }
+
   .admin-nav-link {
+    flex: 0 0 auto;
+    white-space: nowrap;
     border-radius: var(--radius-sm);
   }
 }

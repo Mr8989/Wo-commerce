@@ -66,7 +66,7 @@ function TrackOrder() {
             type="text"
             value={orderNumber}
             onChange={(e) => setOrderNumber(e.target.value)}
-            placeholder="Enter order number (e.g., WW20260401-ABCD)"
+            placeholder="Order number, e.g. WW20260401ABCD1234"
             required
           />
           <button type="submit" className="btn btn-primary" disabled={loading}>

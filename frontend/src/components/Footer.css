@@ -56,15 +56,17 @@
 }
 
 .footer-bottom p {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-xs);
   color: rgba(255, 255, 255, 0.7);
+  line-height: 1.8;
 }
 
+/* Inline so the sentence wraps naturally on narrow screens instead of
+   splitting into flex items around the icon. */
 .footer-bottom svg {
   color: var(--color-secondary);
+  display: inline;
+  vertical-align: middle;
+  margin: 0 0.2em;
 }
 
 @media (max-width: 768px) {

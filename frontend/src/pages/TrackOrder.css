@@ -43,6 +43,7 @@
 
 .search-input-group input {
   flex: 1;
+  min-width: 0; /* let it shrink inside the flex row on small screens */
   border: none;
   font-size: 1rem;
   padding: var(--spacing-sm);

@@ -249,8 +249,8 @@ function AdminOrders() {
           </div>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="orders-table-wrap">
+          <table className="orders-table">
             <thead>
               <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
                 <th style={{ padding: 'var(--spacing-md)', textAlign: 'left' }}>Order #</th>
@@ -266,17 +266,17 @@ function AdminOrders() {
             <tbody>
               {orders.map(order => (
                 <tr key={order.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                  <td style={{ padding: 'var(--spacing-md)', fontWeight: '600' }}>{order.order_number}</td>
-                  <td style={{ padding: 'var(--spacing-md)' }}>{order.first_name} {order.last_name}</td>
-                  <td style={{ padding: 'var(--spacing-md)' }}>
+                  <td data-label="Order #" style={{ padding: 'var(--spacing-md)', fontWeight: '600' }}>{order.order_number}</td>
+                  <td data-label="Customer" style={{ padding: 'var(--spacing-md)' }}>{order.first_name} {order.last_name}</td>
+                  <td data-label="Phone" style={{ padding: 'var(--spacing-md)' }}>
                     <a href={`tel:${order.phone}`} style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>
                       {order.phone}
                     </a>
                   </td>
-                  <td style={{ padding: 'var(--spacing-md)', fontWeight: '700', color: 'var(--color-accent)' }}>
+                  <td data-label="Total" style={{ padding: 'var(--spacing-md)', fontWeight: '700', color: 'var(--color-accent)' }}>
                     GH₵{order.total_amount}
                   </td>
-                  <td style={{ padding: 'var(--spacing-md)' }}>
+                  <td data-label="Payment" style={{ padding: 'var(--spacing-md)' }}>
                     <span style={{
                       fontSize: '0.85rem',
                       padding: '0.25rem 0.5rem',
@@ -287,7 +287,7 @@ function AdminOrders() {
                       {order.payment_method ? order.payment_method.replace(/_/g, ' ') : 'N/A'}
                     </span>
                   </td>
-                  <td style={{ padding: 'var(--spacing-md)' }}>
+                  <td data-label="Status" style={{ padding: 'var(--spacing-md)' }}>
                     <div className="status-cell">
                       <div 
                         className="status-badge-with-icon" 
@@ -307,10 +307,10 @@ function AdminOrders() {
                       )}
                     </div>
                   </td>
-                  <td style={{ padding: 'var(--spacing-md)', color: 'var(--color-text-light)' }}>
+                  <td data-label="Date" style={{ padding: 'var(--spacing-md)', color: 'var(--color-text-light)' }}>
                     {new Date(order.created_at).toLocaleDateString()}
                   </td>
-                  <td style={{ padding: 'var(--spacing-md)' }}>
+                  <td data-label="Actions" style={{ padding: 'var(--spacing-md)' }}>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <button
                         onClick={() => handleViewOrder(order)}

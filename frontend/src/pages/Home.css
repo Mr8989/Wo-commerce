@@ -372,6 +372,11 @@
     min-height: 500px;
   }
 
+  /* Portrait photos on a portrait screen: fill it rather than letterbox. */
+  .slide {
+    background-size: cover;
+  }
+
   .hero-title {
     font-size: 2.5rem;
   }
