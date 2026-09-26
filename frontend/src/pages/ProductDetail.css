@@ -67,6 +67,18 @@
   font-size: 0.9rem;
 }
 
+.size-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.size-guide-link {
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
 .size-options {
   display: flex;
   gap: var(--spacing-sm);

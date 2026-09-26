@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { ShoppingBag, Check } from 'lucide-react';
 import { useStore } from '../store';
 import api from '../api';
@@ -62,7 +62,10 @@ function ProductDetail() {
 
           {product.available_sizes && product.available_sizes.length > 0 && (
             <div className="size-selector">
-              <label>Size</label>
+              <div className="size-label-row">
+                <label>Size</label>
+                <Link to="/size-guide" className="size-guide-link">Size guide</Link>
+              </div>
               <div className="size-options">
                 {product.available_sizes.map(size => (
                   <button
