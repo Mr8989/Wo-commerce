@@ -46,6 +46,20 @@ const policies = {
       ['Updates', 'This policy may be updated from time to time.'],
     ],
   },
+  returns: {
+    title: 'Returns & Exchanges Policy',
+    sections: [
+      ['Our Approach', "We want you to love what you order. If something isn't right, contact us and we'll do our best to help."],
+      ['Wrong, Damaged or Faulty Items', 'If you receive the wrong item, or an item that is damaged or faulty, contact us within 48 hours of delivery with your order number and clear photos of the item. Once confirmed, we will arrange a replacement or a refund at no extra cost to you.'],
+      ['Change of Mind or Wrong Size', 'Exchanges for a different size or colour may be possible, subject to availability. Requests must be made within 3 days of delivery. Delivery costs for change-of-mind exchanges are covered by the customer.'],
+      ['Condition of Returned Items', 'Items must be unworn, unwashed, and in their original condition with all tags and packaging attached. Items that show signs of wear, damage, perfume, makeup or odour cannot be accepted.'],
+      ['Items That Cannot Be Returned', 'For hygiene reasons, underwear, swimwear and earrings cannot be returned or exchanged unless faulty. Sale or discounted items are final sale unless faulty or incorrect.'],
+      ['Refunds', 'Where a refund is approved, it will be made to the original payment method within 7 working days after we receive and check the item. Delivery charges are not refundable unless the error was ours.'],
+      ['How to Start a Return or Exchange', "Message us on WhatsApp or email with your order number, the item, the reason, and photos where relevant. Please don't send items back before we confirm."],
+      ['Colours and Sizing', "Slight colour differences may occur due to lighting and screen settings. These are not considered faults. Please check the size guide or contact us before ordering if you're unsure."],
+      ['Changes to This Policy', 'We may update this policy from time to time.'],
+    ],
+  },
 };
 
 export default policies;

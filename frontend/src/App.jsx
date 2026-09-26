@@ -58,6 +58,7 @@ function App() {
             <Route path="/faq" element={<Policy policy="faq" />} />
             <Route path="/terms" element={<Policy policy="terms" />} />
             <Route path="/privacy" element={<Policy policy="privacy" />} />
+            <Route path="/returns" element={<Policy policy="returns" />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
