@@ -54,6 +54,8 @@ function Footer() {
               <li><a href="/track-order">Shipping Info</a></li>
               <li><a href="/">Returns</a></li>
               <li><a href="/faq">FAQ</a></li>
+              <li><a href="/terms">Terms &amp; Conditions</a></li>
+              <li><a href="/privacy">Privacy Policy</a></li>
             </ul>
           </div>
         </div>

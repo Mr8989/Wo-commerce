@@ -18,6 +18,7 @@ const About = lazy(() => import('./pages/About'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
 const TrackOrder = lazy(() => import('./pages/TrackOrder'));
+const Policy = lazy(() => import('./pages/Policy'));
 const AdminLogin = lazy(() => import('./pages/AdminLogin'));
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const AdminProducts = lazy(() => import('./pages/admin/Products'));
@@ -54,6 +55,9 @@ function App() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/order-confirmation/:orderNumber" element={<OrderConfirmation />} />
             <Route path="/track-order" element={<TrackOrder />} />
+            <Route path="/faq" element={<Policy policy="faq" />} />
+            <Route path="/terms" element={<Policy policy="terms" />} />
+            <Route path="/privacy" element={<Policy policy="privacy" />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
