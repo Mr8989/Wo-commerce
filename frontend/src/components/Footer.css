@@ -49,6 +49,32 @@
   color: var(--color-secondary);
 }
 
+/* Row layout at every width so the icons stay side by side on phones. */
+.footer-socials {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.footer-socials a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.85);
+  transition: var(--transition);
+}
+
+.footer-socials a:hover {
+  color: var(--color-secondary);
+  border-color: var(--color-secondary);
+}
+
 .footer-bottom {
   text-align: center;
   padding-top: var(--spacing-lg);
