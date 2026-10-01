@@ -314,8 +314,8 @@ function Checkout() {
               <div className="payment-instructions">
                 <h4>Mobile Money Details</h4>
                 <div className="payment-details">
-                  <p><strong>MTN:</strong> +233 54 489 3583</p>
-                  <p><strong>Name:</strong> Florence Dabrah Odjer</p>
+                  <p><strong>MTN:</strong> +233 55 079 6760</p>
+                  <p><strong>Name:</strong> Ayerkiedei Enterprise</p>
                 </div>
                 <p className="payment-note">
                   Send exact amount to the number above and send confirmation SMS or WhatsApp message.

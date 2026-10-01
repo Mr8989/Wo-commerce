@@ -76,7 +76,6 @@ function About() {
                 <div>
                   <h4>Phone</h4>
                   <p>+233 54 489 3583</p>
-                  <p>+233 54 489 3583</p>
                 </div>
               </div>
 

@@ -146,11 +146,11 @@ function OrderConfirmation() {
             <div className="payment-details">
               <div className="detail-row">
                 <span className="detail-label">MTN:</span>
-                <span className="detail-value">+233 54 489 3583</span>
+                <span className="detail-value">+233 55 079 6760</span>
               </div>
               <div className="detail-row">
                 <span className="detail-label">Name:</span>
-                <span className="detail-value">Florence Dabrah Odjer</span>
+                <span className="detail-value">Ayerkiedei Enterprise</span>
               </div>
               <div className="detail-row">
                 <span className="detail-label">Amount:</span>
