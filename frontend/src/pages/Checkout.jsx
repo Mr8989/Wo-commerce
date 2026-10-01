@@ -366,7 +366,7 @@ function Checkout() {
             </div>
             <div className="summary-row">
               <span>Delivery</span>
-              {/* <span>Free</span> */}
+              <span className="summary-delivery-note">Paid on delivery</span>
             </div>
             <div className="summary-row total">
               <strong>Total</strong>
